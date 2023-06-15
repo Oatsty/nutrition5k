@@ -1,0 +1,5 @@
+/models
+/Nutrition5k
+foo.*
+/log.txt
+__pycache__

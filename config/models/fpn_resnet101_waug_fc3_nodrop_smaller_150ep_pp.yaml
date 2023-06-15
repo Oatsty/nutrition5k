@@ -1,0 +1,21 @@
+DATA:
+  IMGS_DIR: /srv/datasets2/nutrition5k_dataset/imagery/realsense_overhead
+  METADATAS_PATH: /srv/datasets2/nutrition5k_dataset/metadata/dish_metadata_cafe1.csv
+  SPLITS_TEST_PATH: /srv/datasets2/nutrition5k_dataset/dish_ids/splits/depth_test_ids.txt
+  SPLITS_TRAIN_PATH: /srv/datasets2/nutrition5k_dataset/dish_ids/splits/depth_train_ids.txt
+EVAL: {}
+MODEL:
+  NAME: resnet101
+  PRETRAINED: microsoft/resnet-101
+SAVE_PATH: models/fpn_resnet101_waug_fc3_nodrop_smaller_150ep_pp.pt
+TITLE:
+- fpn with aug fc 3 no dropout smapller 150ep per portion
+TRAIN:
+  BATCH_SIZE: 64
+  CKPT: null
+  FINETUNE: false
+  LAYERS: 1
+  LR: 5.0e-05
+  NUM_EPOCHS: 150
+  SEED: 12345
+  WEIGHT_DECAY: 0.0001
