@@ -20,7 +20,6 @@ class Regressor(nn.Module):
             # nn.ReLU(),
             # nn.Dropout(0.3),
         )
-        nn.Linear(hidden_dim,hidden_dim)
         self.regress = nn.ModuleDict({
             x: nn.Sequential(
                 nn.Linear(hidden_dim,hidden_dim),
@@ -35,6 +34,33 @@ class Regressor(nn.Module):
         x = self.fc1(x)
         out = {d: self.regress[d](x) for d in ['cal','mass','fat','carb','protein']}
         return out  
+    
+class RegressorIngrs(nn.Module):
+    def __init__(self, in_dim, hidden_dim) -> None:
+        super(RegressorIngrs, self).__init__()
+        self.regress_ingrs = nn.Sequential(
+            nn.Linear(hidden_dim,hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim,555),
+        )
+        self.fc1 = nn.Sequential(
+            nn.Linear(in_dim, hidden_dim),
+            nn.ReLU(),
+        )
+        self.regress = nn.ModuleDict({
+            x: nn.Sequential(
+                nn.Linear(hidden_dim,hidden_dim),
+                nn.ReLU(),
+                nn.Linear(hidden_dim,1),
+            ) for x in ['cal','mass','fat','carb','protein']
+        })
+
+    def forward(self, x):
+        out_ingrs = self.regress_ingrs(x)
+        x = self.fc1(x)
+        out = {d: self.regress[d](x) for d in ['cal','mass','fat','carb','protein']}
+        out['ingrs'] = out_ingrs
+        return out 
     
 class SelfAttention(nn.Module):
     def __init__(self, dim, heads = 8, dim_head = 64):
@@ -69,18 +95,18 @@ class SelfAttention(nn.Module):
         out = torch.matmul(attn, v)
         out = rearrange(out, 'b h n d -> b n (h d)')
         out = self.to_out(out)
-        # out = out + x
+        out = out + x
         # out = self.norm(out + x)
         return out
 
 class SimpleInceptionV2(nn.Module):
-    def __init__(self, hidden_dim, pretrained_model: str = 'inception_resnet_v2') -> None:
+    def __init__(self, hidden_dim, pretrained_model: str = 'inception_resnet_v2', regressor: nn.Module = Regressor(6144, 4096)) -> None:
         super(SimpleInceptionV2, self).__init__()
         self.conv0 = nn.Conv2d(4,3,1)
         self.backbone = timm.create_model(pretrained_model, features_only=True, pretrained=True)
         self.pooling = nn.AvgPool2d(3,2)
         self.flatten = nn.Flatten()
-        self.regressor = Regressor(6144, hidden_dim)
+        self.regressor = regressor
 
     def forward(self, img, depth):
         x = torch.cat([img,depth],dim=1)
@@ -92,7 +118,7 @@ class SimpleInceptionV2(nn.Module):
         return out  
 
 class FPN(nn.Module):
-    def __init__(self, hidden_dim: int, pretrained_model: str = 'microsoft/resnet-50', resolution_level: int = 2) -> None:
+    def __init__(self, hidden_dim: int, pretrained_model: str = 'microsoft/resnet-50', resolution_level: int = 2, regressor: nn.Module = Regressor(2048,2048)) -> None:
         super(FPN, self).__init__()
         self.backbone = nn.ModuleDict({x: ResNetModel.from_pretrained(pretrained_model) for x in ['rgb_img','depth_img']}) #type: ignore
         channel_list = [256, 512, 1024, 2048]
@@ -101,7 +127,7 @@ class FPN(nn.Module):
         self.attention = SelfAttention(hidden_dim)
         self.pooling = nn.AdaptiveAvgPool2d(1)
         self.flatten = nn.Flatten()
-        self.regressor = Regressor(hidden_dim * len(channel_list), hidden_dim * len(channel_list))
+        self.regressor = regressor
         for module in self.regressor.modules():
             if isinstance(module, nn.Linear):
                 module.weight.data *= 0.67
@@ -143,11 +169,15 @@ def get_model(config,device):
     layers = config.TRAIN.LAYERS
     finetune = config.TRAIN.FINETUNE
     if mod == 'inceptionv2':
-        model = SimpleInceptionV2(4096, pretrained_model)
+        model = SimpleInceptionV2(4096, pretrained_model, regressor = Regressor(6144,4096))
     elif mod == 'resnet50':
-        model = FPN(512,pretrained_model)
+        model = FPN(512,pretrained_model, regressor = Regressor(2048,2048))
     elif mod == 'resnet101':
-        model = FPN(512,pretrained_model)
+        model = FPN(512,pretrained_model, regressor = Regressor(2048,2048))
+    elif mod == 'resnet50-ingrs':
+        model = FPN(512,pretrained_model, regressor = RegressorIngrs(2048,2048))
+    elif mod == 'resnet101-ingrs':
+        model = FPN(512,pretrained_model, regressor = RegressorIngrs(2048,2048))
     else:
         exit(1)
 

@@ -5,17 +5,19 @@ DATA:
   SPLITS_TRAIN_PATH: /srv/datasets2/nutrition5k_dataset/dish_ids/splits/depth_train_ids.txt
 EVAL: {}
 MODEL:
-  NAME: resnet101
+  NAME: resnet101-ingrs
   PRETRAINED: microsoft/resnet-101
-SAVE_PATH: models/fpn_resnet101_wrot_fc3_nodrop_attninit_warmup_smaller_150ep_mltscl.pt
+SAVE_PATH: models/fpn_mltingrs_resnet101_wrot_fc3_nodrop_attninit_warmup_smaller_150ep_mltscl.pt
 TITLE:
-- fpn with aug+rotate fc 3 no dropout freeze smaller new attn initialize with warmup 150ep multi scale
+- fpn multi ingrs with aug+rot fc 3 no dropout smaller new attn initialize with warmup
+  150ep multi scale
 TRAIN:
   BATCH_SIZE: 32
   CKPT: null
   FINETUNE: false
   LAYERS: 1
+  LOSS: multi_ingrs
   LR: 0.0001
   NUM_EPOCHS: 150
   SEED: 12345
-  WEIGHT_DECAY: 0.0001
+  WEIGHT_DECAY: 0.001

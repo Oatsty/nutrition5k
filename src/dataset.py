@@ -84,9 +84,9 @@ class Nutrition5kDataset(Dataset):
     @staticmethod
     def transform_(rgb_img,depth_img):
         # rotate
-        # params = transforms.RandomRotation.get_params([-180,180])
-        # rgb_img = TF.rotate(rgb_img,params)
-        # depth_img = TF.rotate(depth_img,params,fill=depth_img.max().item())
+        params = transforms.RandomRotation.get_params([-180,180])
+        rgb_img = TF.rotate(rgb_img,params)
+        depth_img = TF.rotate(depth_img,params,fill=depth_img.max().item())
 
         if np.random.rand() < 0.5:
             rgb_img = TF.hflip(rgb_img)
@@ -150,7 +150,19 @@ def make_dataset(config: Optional[CN], imgs_dir: str = '.', metadatas_path: str 
         metadatas_path_p = Path(metadatas_path)
         splits_train_path_p = Path(splits_train_path)
         splits_test_path_p = Path(splits_test_path)
-    removed = ['dish_1564159636']
+    removed = {
+        'dish_1564159636',
+        'dish_1551138237',
+        'dish_1551232973',
+        'dish_1551381990',
+        'dish_1551389458',
+        'dish_1551389551',
+        'dish_1551389588',
+        'dish_1551567508',
+        'dish_1551567573',
+        'dish_1551567604',
+        'dish_1560974769'
+    }
     splits_train = [line.rstrip() for line in open(splits_train_path_p,'r').readlines()]
     splits_train = list(filter(lambda t: imgs_dir_p.joinpath(t,'rgb.png').is_file() and imgs_dir_p.joinpath(t,'depth_raw.png').is_file() and t not in removed,splits_train))
     splits_test = [line.rstrip() for line in open(splits_test_path_p,'r').readlines()]

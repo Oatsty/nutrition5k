@@ -32,6 +32,7 @@ _C.MODEL.PRETRAINED = 'inception_resnet_v2'
 # train
 # -----------------------------------------------------------------------------
 _C.TRAIN = CN()
+_C.TRAIN.LOSS = 'multi'
 _C.TRAIN.BATCH_SIZE = 128
 _C.TRAIN.LR = 0.01
 _C.TRAIN.NUM_EPOCHS = 20
@@ -91,6 +92,8 @@ def update_config(config, args):
         config.MODEL.NAME = args.model_name
     if _check_args('pretrained_model'):
         config.MODEL.PRETRAINED = args.pretrained_model
+    if _check_args('train_loss'):
+        config.TRAIN.LOSS = args.train_loss
     if _check_args('batch_size'):
         config.TRAIN.BATCH_SIZE = args.batch_size
     if _check_args('lr'):
@@ -148,6 +151,7 @@ def get_parser() -> argparse.ArgumentParser:
     parser.add_argument('--splits-test-path', type=str)
     parser.add_argument('--model-name', type=str)
     parser.add_argument('--pretrained-model', type=str)
+    parser.add_argument('--train-loss', type=str)
     parser.add_argument('--batch-size', type=int)
     parser.add_argument('--lr', type=float)
     parser.add_argument('--num-epochs', type=int)
@@ -175,5 +179,5 @@ if __name__ == '__main__':
     dump_path = os.path.join('config',os.path.splitext(config.SAVE_PATH)[0] + '.yaml')
     os.makedirs(os.path.dirname(dump_path), exist_ok=True)
     with open(dump_path,'w') as f:
-        f.write(config.dump())
+        f.write(config.dump()) #type: ignore
     logger.info(f'Config Path: {dump_path}')
