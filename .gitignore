@@ -3,3 +3,4 @@
 foo.*
 /log.txt
 __pycache__
+/pretrained_xdecoder

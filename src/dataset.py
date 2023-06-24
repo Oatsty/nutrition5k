@@ -72,7 +72,7 @@ class Nutrition5kDataset(Dataset):
                 # transforms.Resize(256),
                 # transforms.CenterCrop((256,256)),
                 transforms.ToTensor(),
-                transforms.Normalize((0.594,0.082,0.117),(0.131,0.088,0.078))
+                transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
             ])
             self.transform_depth = transforms.Compose([
                 # transforms.Resize(256),
@@ -136,7 +136,7 @@ class Nutrition5kDataset(Dataset):
         depth_img = transforms.Normalize(3091,1307)(depth_img)
         rgb_img, depth_img = self.transform_(rgb_img, depth_img)
         metadata = self.metadatas_dict[self.splits[index]]
-        sample = {'rgb_img': rgb_img, 'depth_img': depth_img, 'metadata': metadata}
+        sample = {'rgb_img': rgb_img, 'depth_img': depth_img, 'metadata': metadata, 'rgb_path': str(rgb_path), 'depth_path': str(depth_path)}
         return sample
 
 def make_dataset(config: Optional[CN], imgs_dir: str = '.', metadatas_path: str = '.', splits_train_path: str = '.', splits_test_path: str = '.'):
