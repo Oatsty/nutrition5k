@@ -27,6 +27,7 @@ _C.DATA.SPLITS_TEST_PATH = '/srv/datasets2/nutrition5k_dataset/dish_ids/splits/d
 _C.MODEL = CN()
 _C.MODEL.NAME = 'inceptionv2'
 _C.MODEL.PRETRAINED = 'inception_resnet_v2'
+_C.MODEL.MASK_WEIGHT = 0.5
 
 # -----------------------------------------------------------------------------
 # train
@@ -92,6 +93,8 @@ def update_config(config, args):
         config.MODEL.NAME = args.model_name
     if _check_args('pretrained_model'):
         config.MODEL.PRETRAINED = args.pretrained_model
+    if _check_args('mask_weight'):
+        config.MODEL.MASK_WEIGHT = args.mask_weight
     if _check_args('train_loss'):
         config.TRAIN.LOSS = args.train_loss
     if _check_args('batch_size'):
@@ -151,6 +154,7 @@ def get_parser() -> argparse.ArgumentParser:
     parser.add_argument('--splits-test-path', type=str)
     parser.add_argument('--model-name', type=str)
     parser.add_argument('--pretrained-model', type=str)
+    parser.add_argument('--mask-weight', type=float)
     parser.add_argument('--train-loss', type=str)
     parser.add_argument('--batch-size', type=int)
     parser.add_argument('--lr', type=float)

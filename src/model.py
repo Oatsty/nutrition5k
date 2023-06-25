@@ -4,8 +4,10 @@ import timm
 import torch
 from torch import nn
 import torch.nn.functional as f
-from transformers import ResNetModel
+from transformers import ResNetModel # type: ignore
 from torchvision.ops import FeaturePyramidNetwork
+
+from seg_openseed import OpenSeeDSeg
 
 class Regressor(nn.Module):
     def __init__(self, in_dim, hidden_dim) -> None:
@@ -14,7 +16,7 @@ class Regressor(nn.Module):
             nn.Linear(in_dim, hidden_dim),
             # nn.BatchNorm1d(hidden_dim),
             nn.ReLU(),
-            # nn.Dropout(0.3),
+            # nn.Dropout(0.1),
             # nn.Linear(hidden_dim, hidden_dim),
             # # nn.BatchNorm1d(hidden_dim),
             # nn.ReLU(),
@@ -25,7 +27,7 @@ class Regressor(nn.Module):
                 nn.Linear(hidden_dim,hidden_dim),
                 # nn.BatchNorm1d(hidden_dim),
                 nn.ReLU(),
-                # nn.Dropout(0.3),
+                # nn.Dropout(0.1),
                 nn.Linear(hidden_dim,1),
             ) for x in ['cal','mass','fat','carb','protein']
         })
@@ -161,6 +163,69 @@ class FPN(nn.Module):
         emb = self.flatten(emb)
         out = self.regressor(emb)
         return out
+    
+class FPNOpenSeeD(nn.Module):
+    def __init__(self, hidden_dim: int, regressor: nn.Module, resolution_level: str = 'res4', mask_weight: float = 0.5, device='cuda') -> None:
+        super(FPNOpenSeeD, self).__init__()
+        channel_list = [96, 192, 384, 768]
+        self.resolution_level = resolution_level
+        self.mask_weight = mask_weight
+        self.rgb_fpn = FeaturePyramidNetwork(channel_list,hidden_dim)
+        self.depth_fpn = FeaturePyramidNetwork(channel_list,hidden_dim)
+        self.attention = SelfAttention(hidden_dim)
+        self.pooling = nn.AdaptiveAvgPool2d(1)
+        self.flatten = nn.Flatten()
+        self.regressor = regressor
+        self.openseed_seg = OpenSeeDSeg(device)
+
+    def forward_features(self, rgb_features: dict[str,torch.Tensor], depth_features: dict[str,torch.Tensor]):
+        B, _, _, _ = rgb_features['res2'].shape
+        rgb_hidden_states:  dict[str,torch.Tensor] = self.rgb_fpn(rgb_features)
+        depth_hidden_states: dict[str,torch.Tensor] = self.depth_fpn(depth_features)
+        _, _, fin_res_height, fin_res_width = rgb_hidden_states[self.resolution_level].shape
+        hidden_states = {}
+        for (rgb_key, rgb_hid), (depth_key, depth_hid) in zip(rgb_hidden_states.items(),depth_hidden_states.items()):
+            if rgb_hid.shape[-1] > fin_res_width:
+                rgb_hidden_states[rgb_key] = f.adaptive_avg_pool2d(rgb_hid,(fin_res_height,fin_res_width))
+            else:
+                rgb_hidden_states[rgb_key] = f.interpolate(rgb_hid,(fin_res_height,fin_res_width))
+            if depth_hid.shape[-1] > fin_res_width:
+                depth_hidden_states[depth_key] = f.adaptive_avg_pool2d(depth_hid,(fin_res_height,fin_res_width))
+            else:
+                depth_hidden_states[depth_key] = f.interpolate(depth_hid,(fin_res_height,fin_res_width))
+            hidden_states[rgb_key] = rgb_hidden_states[rgb_key] + depth_hidden_states[depth_key]
+        hidden_states = torch.stack([emb for emb in hidden_states.values()])
+        pooled_hidden = hidden_states.mean(0)
+        pooled_hidden = rearrange(pooled_hidden, 'b c h w -> b (h w) c', h=fin_res_height)
+        pooled_hidden = self.attention(pooled_hidden)
+        pooled_hidden = rearrange(pooled_hidden, 'b (h w) c -> b c h w', h=fin_res_height)
+        hidden_states = hidden_states + pooled_hidden.unsqueeze(0)
+        hidden_states = rearrange(hidden_states, 'n b c h w -> b (n c) h w', b=B)
+        emb = self.pooling(hidden_states)
+        emb = self.flatten(emb)
+        out = self.regressor(emb)
+        # for key, hid in hidden_states.items():
+        #     hidden_states[key] = self.flatten(self.pooling(hid))
+        # hidden_states = torch.cat([emb for emb in hidden_states.values()],dim=1)
+        # out = self.regressor(hidden_states)
+        return out
+    
+    def forward(self, img: torch.Tensor, depth: torch.Tensor):
+        masks, _, rgb_features = self.openseed_seg.get_mask(img)
+        depth = depth.expand(-1,3,-1,-1)
+        depth = depth * 255
+        for key, feat in rgb_features.items():
+            mask = f.adaptive_avg_pool2d(masks,(feat.shape[-2],feat.shape[-1])).unsqueeze(1)
+            mask = torch.where(mask.bool(),mask,self.mask_weight)
+            rgb_features[key] = feat * mask
+        _, _, depth_features = self.openseed_seg.get_mask(depth)
+        for key, feat in depth_features.items():
+            mask = f.adaptive_avg_pool2d(masks,(feat.shape[-2],feat.shape[-1])).unsqueeze(1)
+            mask = torch.where(mask.bool(),mask,self.mask_weight)
+            depth_features[key] = feat * mask
+        out = self.forward_features(rgb_features,depth_features)
+        return out
+        
 
 
 def get_model(config,device):
@@ -168,12 +233,15 @@ def get_model(config,device):
     pretrained_model = config.MODEL.PRETRAINED
     layers = config.TRAIN.LAYERS
     finetune = config.TRAIN.FINETUNE
+    mask_weight = config.MODEL.MASK_WEIGHT
     if mod == 'inceptionv2':
         model = SimpleInceptionV2(4096, pretrained_model, regressor = Regressor(6144,4096))
     elif mod == 'resnet50':
         model = FPN(512,pretrained_model, regressor = Regressor(2048,2048))
     elif mod == 'resnet101':
         model = FPN(512,pretrained_model, regressor = Regressor(2048,2048))
+    elif mod == 'openseed':
+        model = FPNOpenSeeD(512, regressor = Regressor(2048,2048), mask_weight=mask_weight)
     elif mod == 'resnet50-ingrs':
         model = FPN(512,pretrained_model, regressor = RegressorIngrs(2048,2048))
     elif mod == 'resnet101-ingrs':

@@ -1,7 +1,3 @@
-import sys
-sys.path.insert(0,'/home/parinayok/nutrition5k/OpenSeeD')
-sys.path.append('/home/parinayok/nutrition5k')
-
 import random
 from typing import Callable
 from dataset import Metadata, collate_fn, make_dataset

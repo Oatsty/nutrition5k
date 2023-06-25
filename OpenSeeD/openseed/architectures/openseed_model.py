@@ -312,7 +312,8 @@ class OpenSeeD(nn.Module):
                 instance_r = retry_if_cuda_oom(self.instance_inference)(mask_cls_result, mask_pred_result, mask_box_result)
                 processed_results[-1]["instances"] = instance_r
         del mask_pred_results
-        return processed_results
+        
+        return {'results': processed_results, 'backbone_features': features}
 
     def semantic_inference(self, mask_cls, mask_pred):
         # if use cross-entropy loss in training, evaluate with softmax

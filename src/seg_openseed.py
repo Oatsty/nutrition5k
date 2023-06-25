@@ -1,15 +1,11 @@
 import os
 import sys
-import logging
 
 sys.path.append('..')
 sys.path.append('OpenSeeD')
 
-from PIL import Image
-import numpy as np
-
 import torch
-from torchvision import transforms
+from torch import nn
 
 from OpenSeeD.utils.arguments import load_opt_from_config_files
 
@@ -17,51 +13,56 @@ from detectron2.data import MetadataCatalog
 from detectron2.utils.colormap import random_color
 from OpenSeeD.openseed.BaseModel import BaseModel
 from OpenSeeD.openseed import build_model
-from OpenSeeD.utils.visualizer import Visualizer
 from OpenSeeD.utils.distributed import init_distributed
 
-logger = logging.getLogger(__name__)
+class OpenSeeDSeg:
+    def __init__(self, device) -> None:
+        super(OpenSeeDSeg, self).__init__()
+        conf_files = ['/home/parinayok/nutrition5k/OpenSeeD/configs/openseed/openseed_swint_lang.yaml']
+        opt = load_opt_from_config_files(conf_files)
+        opt['cont_files'] = conf_files
+        opt['command'] = 'evaluate'
+        opt = init_distributed(opt)
+        pretrained_pth = os.path.join(opt['WEIGHT'])
+        thing_classes = ['food']
+        thing_colors = [random_color(rgb=True, maximum=255).astype(int).tolist() for _ in range(len(thing_classes))]
+        thing_dataset_id_to_contiguous_id = {x:x for x in range(len(thing_classes))}
+        MetadataCatalog.get("demo").set(
+            thing_colors=thing_colors,
+            thing_classes=thing_classes,
+            thing_dataset_id_to_contiguous_id=thing_dataset_id_to_contiguous_id,
+        )
+        metadata = MetadataCatalog.get('demo')
+        print(metadata)
+        self.model = BaseModel(opt, build_model(opt)).from_pretrained(pretrained_pth).eval().to(device)
+        self.model.model.metadata = metadata # type: ignore
+        self.model.model.sem_seg_head.predictor.lang_encoder.get_text_embeddings(thing_classes, is_eval=False) # type: ignore
+        self.model.model.sem_seg_head.num_classes = len(thing_classes) # type: ignore
 
-def seg(image: torch.Tensor,device: torch.device):
-    conf_files = ['/home/parinayok/nutrition5k/OpenSeeD/configs/openseed/openseed_swint_lang.yaml']
-    opt = load_opt_from_config_files(conf_files)
-    opt['cont_files'] = conf_files
-    opt['command'] = 'evaluate'
-    opt = init_distributed(opt)
+    def seg(self, image: torch.Tensor):
+        with torch.no_grad():
+            height = image.shape[-2]
+            width = image.shape[-1]
+            batch_inputs = [{'image': img, 'height': height, 'width': width} for img in image]
+            outputs = self.model.forward(batch_inputs,'inst_seg')
+        return outputs
 
-    # META DATA
-    pretrained_pth = os.path.join(opt['WEIGHT'])
-    model = BaseModel(opt, build_model(opt)).from_pretrained(pretrained_pth).eval().to(device)
-
-    # t = []
-    # t.append(transforms.Resize(512, interpolation=Image.BICUBIC))
-    # transform = transforms.Compose(t)
-
-    thing_classes = ['food']
-    # stuff_classes = ['apple','zebra','antelope','giraffe','ostrich','sky','water','grass','sand','tree']
-    model.model.sem_seg_head.predictor.lang_encoder.get_text_embeddings(thing_classes, is_eval=False) # type: ignore
-    metadata = MetadataCatalog.get('demo')
-    model.model.metadata = metadata # type: ignore
-    model.model.sem_seg_head.num_classes = len(thing_classes) # type: ignore
-
-    with torch.no_grad():
-        height = image.shape[-2]
-        width = image.shape[-1]
-        # image = transform(image)
-        batch_inputs = [{'image': image, 'height': height, 'width': width}]
-        outputs = model.forward(batch_inputs,'inst_seg')
-    return outputs
-        # visual = Visualizer(image_ori, metadata=metadata)
-
-        # sem_seg = outputs[-1]['sem_seg'].max(0)[1]
-        # demo = visual.draw_sem_seg(sem_seg.cpu(), alpha=0.5) # rgb Image
-
-        # if not os.path.exists(output_root):
-        #     os.makedirs(output_root)
-        # demo.save(os.path.join(output_root, 'sem.png'))
-
-
-if __name__ == "__main__":
-    x = torch.rand(3,256,256)
-    seg(x,torch.device('cuda'))
-    sys.exit(0)
+    def get_mask(self, img: torch.Tensor):
+        outputs = self.seg(img)
+        features = outputs['backbone_features']
+        mask_batch = []
+        inst_seg_batch = []
+        for res in outputs['results']:
+            inst_seg = res['instances']
+            inst_seg_batch.append(inst_seg)
+            scores = inst_seg.scores
+            masks = inst_seg.pred_masks
+            keep = scores > 0.1
+            masks = masks[keep]
+            if len(masks) == 0:
+                mask = torch.ones(masks.shape[1],masks.shape[2],device=masks.device)
+            else:
+                mask = masks.max(0)[0]
+            mask_batch.append(mask)
+        mask_batch_tensor = torch.stack(mask_batch)
+        return mask_batch_tensor, inst_seg_batch, features

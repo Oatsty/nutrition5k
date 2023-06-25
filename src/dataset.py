@@ -74,11 +74,11 @@ class Nutrition5kDataset(Dataset):
                 transforms.ToTensor(),
                 transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
             ])
-            self.transform_depth = transforms.Compose([
-                # transforms.Resize(256),
-                # transforms.CenterCrop((256,256)),
-                transforms.PILToTensor(),
-            ])
+        self.transform_depth = transforms.Compose([
+            # transforms.Resize(256),
+            # transforms.CenterCrop((256,256)),
+            transforms.PILToTensor(),
+        ])
         self.init_metadatas()
 
     @staticmethod
@@ -139,7 +139,7 @@ class Nutrition5kDataset(Dataset):
         sample = {'rgb_img': rgb_img, 'depth_img': depth_img, 'metadata': metadata, 'rgb_path': str(rgb_path), 'depth_path': str(depth_path)}
         return sample
 
-def make_dataset(config: Optional[CN], imgs_dir: str = '.', metadatas_path: str = '.', splits_train_path: str = '.', splits_test_path: str = '.'):
+def make_dataset(config: Optional[CN], imgs_dir: str = '.', metadatas_path: str = '.', splits_train_path: str = '.', splits_test_path: str = '.', unnormalized_int_tensor: bool = False):
     if isinstance(config, CN):
         imgs_dir_p = Path(config.DATA.IMGS_DIR)
         metadatas_path_p = Path(config.DATA.METADATAS_PATH)
@@ -167,8 +167,14 @@ def make_dataset(config: Optional[CN], imgs_dir: str = '.', metadatas_path: str 
     splits_train = list(filter(lambda t: imgs_dir_p.joinpath(t,'rgb.png').is_file() and imgs_dir_p.joinpath(t,'depth_raw.png').is_file() and t not in removed,splits_train))
     splits_test = [line.rstrip() for line in open(splits_test_path_p,'r').readlines()]
     splits_test = list(filter(lambda t: imgs_dir_p.joinpath(t,'rgb.png').is_file() and imgs_dir_p.joinpath(t,'depth_raw.png').is_file() and t not in removed,splits_test))
-    train_dataset = Nutrition5kDataset(imgs_dir_p, metadatas_path_p, splits_train)
-    test_dataset = Nutrition5kDataset(imgs_dir_p, metadatas_path_p, splits_test)
+
+    if unnormalized_int_tensor or config.MODEL.NAME == 'openseed':
+        transform = transforms.Compose([transforms.PILToTensor()])
+        print('unnormalized')
+    else:
+        transform = None
+    train_dataset = Nutrition5kDataset(imgs_dir_p, metadatas_path_p, splits_train, transform=transform)
+    test_dataset = Nutrition5kDataset(imgs_dir_p, metadatas_path_p, splits_test, transform=transform)
     return {'train': train_dataset, 'test': test_dataset}
 
 def collate_fn(batch):
