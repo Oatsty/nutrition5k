@@ -1,84 +1,21 @@
-from dataclasses import dataclass, field
-from time import process_time_ns
-import numpy as np
-import os
 from pathlib import Path
-import torch
-from torch.utils.data import Dataset, DataLoader, default_collate
-from torchvision import transforms
-import torchvision.transforms.functional as TF
 from typing import Any, Optional
 from PIL import Image
 from yacs.config import CfgNode as CN
 
-@dataclass
-class Ingr:
-    id: str
-    name: str
-    grams: float
-    cal: float
-    fat: float
-    carb: float
-    protein: float
+import numpy as np
 
-    def __str__(self) -> str:
-        ingr_dict = {
-            'id': self.id,
-            'name': self.name,
-            'grams': self.grams,
-            'cal': self.cal,
-            'fat': self.fat,
-            'carb': self.carb,
-            'protein': self.protein
-        }
-        return str(ingr_dict)
+import torch
+from torch.utils.data import Dataset
+from torchvision import transforms
+import torchvision.transforms.functional as TF
 
+from .base_dataset import BaseDataset, Metadata, Ingr
 
-@dataclass
-class Metadata:
-    dish_id: str = field(default_factory=str)
-    cal: float = field(default_factory=float)
-    mass: float = field(default_factory=float)
-    fat: float = field(default_factory=float) 
-    carb: float = field(default_factory=float)
-    protein: float = field(default_factory=float)
-    ingrs: list[Ingr] = field(default_factory=list)
-
-    def __str__(self) -> str:
-        metadata_dict = {
-            'dish_id': self.dish_id,
-            'cal': self.cal,
-            'mass': self.mass,
-            'fat': self.fat,
-            'carb': self.carb,
-            'protein': self.protein,
-            'ingrs': self.ingrs
-        }
-        return str(metadata_dict)
-
-class Nutrition5kDataset(Dataset):
-    def __init__(self, imgs_dir: Path, metadatas_path: Path, splits: list[str], transform: Optional[transforms.Compose] = None) -> None:
-        super(Nutrition5kDataset, self).__init__()
-        self.imgs_dir = imgs_dir
-        self.metadatas_path = metadatas_path
-        self.splits = splits
+class Recipe1MDataset(BaseDataset):
+    def __init__(self, *args, **kwargs) -> None:
+        super(Recipe1MDataset, self).__init__(*args, **kwargs)
         self.metadatas_dict: dict[str,Metadata] = {}
-        self.mean_metadata = Metadata('mean', 255.,218.,12.7,19.3,18.1)
-        self.std_metadata = Metadata('std', 221.,163.,13.4,22.3,20.2)
-        if isinstance(transform,transforms.Compose):
-            self.transform = transform
-        else:
-            self.transform = transforms.Compose([
-                # transforms.Resize(256),
-                # transforms.CenterCrop((256,256)),
-                transforms.ToTensor(),
-                transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
-            ])
-        self.transform_depth = transforms.Compose([
-            # transforms.Resize(256),
-            # transforms.CenterCrop((256,256)),
-            transforms.PILToTensor(),
-        ])
         self.init_metadatas()
 
     @staticmethod
@@ -133,13 +70,13 @@ class Nutrition5kDataset(Dataset):
         depth_img = Image.open(depth_path)
         rgb_img = self.transform(rgb_img) 
         depth_img = self.transform_depth(depth_img).float() #type: ignore
-        depth_img = transforms.Normalize(3091,1307)(depth_img)
+        depth_img = self.normalize_depth(depth_img)
         rgb_img, depth_img = self.transform_(rgb_img, depth_img)
         metadata = self.metadatas_dict[self.splits[index]]
         sample = {'rgb_img': rgb_img, 'depth_img': depth_img, 'metadata': metadata, 'rgb_path': str(rgb_path), 'depth_path': str(depth_path)}
         return sample
 
-def make_dataset(config: Optional[CN], imgs_dir: str = '.', metadatas_path: str = '.', splits_train_path: str = '.', splits_test_path: str = '.', unnormalized_int_tensor: bool = False):
+def make_dataset(config: Optional[CN], imgs_dir: str = '.', metadatas_path: str = '.', splits_train_path: str = '.', splits_test_path: str = '.', unnormalized_int_tensor: bool = False) -> dict[str, BaseDataset]:
     if isinstance(config, CN):
         imgs_dir_p = Path(config.DATA.IMGS_DIR)
         metadatas_path_p = Path(config.DATA.METADATAS_PATH)
@@ -168,36 +105,15 @@ def make_dataset(config: Optional[CN], imgs_dir: str = '.', metadatas_path: str 
     splits_test = [line.rstrip() for line in open(splits_test_path_p,'r').readlines()]
     splits_test = list(filter(lambda t: imgs_dir_p.joinpath(t,'rgb.png').is_file() and imgs_dir_p.joinpath(t,'depth_raw.png').is_file() and t not in removed,splits_test))
 
-    if unnormalized_int_tensor or config.MODEL.NAME == 'openseed':
-        transform = transforms.Compose([transforms.PILToTensor()])
+    model_name = config.MODEL.NAME if config != None else ''
+
+    if unnormalized_int_tensor or model_name == 'openseed':
         print('unnormalized')
+        transform = transforms.Compose([transforms.PILToTensor()])
+        normalize_depth = transforms.Normalize(0,5.361)
     else:
         transform = None
-    train_dataset = Nutrition5kDataset(imgs_dir_p, metadatas_path_p, splits_train, transform=transform)
-    test_dataset = Nutrition5kDataset(imgs_dir_p, metadatas_path_p, splits_test, transform=transform)
+        normalize_depth = None
+    train_dataset = Recipe1MDataset(imgs_dir_p, metadatas_path_p, splits_train, transform=transform, normalize_depth=normalize_depth)
+    test_dataset = Recipe1MDataset(imgs_dir_p, metadatas_path_p, splits_test, transform=transform, normalize_depth=normalize_depth)
     return {'train': train_dataset, 'test': test_dataset}
-
-def collate_fn(batch):
-    keys = list(batch[0].keys())
-    output = {}
-    new_batch = zip(*map(lambda t: t.values(), batch))
-    for i, sample in enumerate(new_batch):
-        if keys[i] != 'metadata':
-            output[keys[i]] = default_collate(list(sample))
-        else:
-            output[keys[i]] = list(sample)
-    return output
-
-
-
-
-  
-
-
-        
-
-
-
-        
-            
-

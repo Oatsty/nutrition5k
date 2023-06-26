@@ -16,6 +16,7 @@ _C = CN()
 # Data settings
 # -----------------------------------------------------------------------------
 _C.DATA = CN()
+_C.DATA.NAME = 'nutrition5k'
 _C.DATA.IMGS_DIR = '/srv/datasets2/nutrition5k_dataset/imagery/realsense_overhead'
 _C.DATA.METADATAS_PATH = '/srv/datasets2/nutrition5k_dataset/metadata/dish_metadata_cafe1.csv'
 _C.DATA.SPLITS_TRAIN_PATH = '/srv/datasets2/nutrition5k_dataset/dish_ids/splits/depth_train_ids.txt'
@@ -47,6 +48,8 @@ _C.TRAIN.SEED = 12345
 # eval
 # -----------------------------------------------------------------------------
 _C.EVAL = CN()
+_C.EVAL.HEIGHT = 384
+_C.EVAL.WIDTH = 512
 
 # -----------------------------------------------------------------------------
 # misc
@@ -81,6 +84,8 @@ def update_config(config, args):
     config.defrost()
 
     # merge from specific arguments
+    if _check_args('data_name'):
+        config.DATA.NAME = args.data_name
     if _check_args('imgs_dir'):
         config.DATA.IMGS_DIR = args.imgs_dir
     if _check_args('metadatas_path'):
@@ -111,6 +116,10 @@ def update_config(config, args):
         config.TRAIN.FINETUNE = True
     if _check_args('layers'):
         config.TRAIN.LAYERS = args.layers
+    if _check_args('eval_height'):
+        config.EVAL.HEIGHT = args.eval_height
+    if _check_args('eval_width'):
+        config.EVAL.WIDTH = args.eval_width
     if _check_args('save_path'):
         config.SAVE_PATH = args.save_path
     if _check_args('title'):
@@ -148,6 +157,7 @@ def init_logger(log_dir: str, log_file: str) -> logging.Logger:
 
 def get_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser()
+    parser.add_argument('--data-name', type=str)
     parser.add_argument('--imgs-dir', type=str)
     parser.add_argument('--metadatas-path', type=str)
     parser.add_argument('--splits-train-path', type=str)
@@ -163,6 +173,8 @@ def get_parser() -> argparse.ArgumentParser:
     parser.add_argument('--ckpt', type=str)
     parser.add_argument('--finetune', action='store_true')
     parser.add_argument('--layers', type=int)
+    parser.add_argument('--eval-height', type=int)
+    parser.add_argument('--eval-width', type=int)
     parser.add_argument('--thresh', type=float)
     parser.add_argument('--save-path', type=str)
     parser.add_argument('--cfg', type=str)

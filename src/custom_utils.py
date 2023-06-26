@@ -4,7 +4,7 @@ from torch import nn
 import torch.nn.functional as F
 from yacs.config import CfgNode as CN
 
-from dataset import Ingr, Metadata
+from dataset.nutrition5k_dataset import Ingr, Metadata
 
 num_ingrs = 555
 

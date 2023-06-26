@@ -213,7 +213,6 @@ class FPNOpenSeeD(nn.Module):
     def forward(self, img: torch.Tensor, depth: torch.Tensor):
         masks, _, rgb_features = self.openseed_seg.get_mask(img)
         depth = depth.expand(-1,3,-1,-1)
-        depth = depth * 255
         for key, feat in rgb_features.items():
             mask = f.adaptive_avg_pool2d(masks,(feat.shape[-2],feat.shape[-1])).unsqueeze(1)
             mask = torch.where(mask.bool(),mask,self.mask_weight)
@@ -247,7 +246,7 @@ def get_model(config,device):
     elif mod == 'resnet101-ingrs':
         model = FPN(512,pretrained_model, regressor = RegressorIngrs(2048,2048))
     else:
-        exit(1)
+        raise ValueError(f'Unkown model: {mod}')
 
     # model.backbone.requires_grad_(False)
     return model
