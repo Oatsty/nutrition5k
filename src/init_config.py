@@ -47,13 +47,14 @@ _C.TRAIN.CKPT = None
 _C.TRAIN.FINETUNE = False
 _C.TRAIN.LAYERS = 1
 _C.TRAIN.SEED = 12345
+_C.TRAIN.TRAINER = 'normal'
 
 # -----------------------------------------------------------------------------
 # eval
 # -----------------------------------------------------------------------------
 _C.EVAL = CN()
-_C.EVAL.HEIGHT = 384
-_C.EVAL.WIDTH = 512
+_C.EVAL.HEIGHT = 480
+_C.EVAL.WIDTH = 640
 
 # -----------------------------------------------------------------------------
 # misc
@@ -128,6 +129,8 @@ def update_config(config, args):
         config.TRAIN.FINETUNE = True
     if _check_args('layers'):
         config.TRAIN.LAYERS = args.layers
+    if _check_args('trainer'):
+        config.TRAIN.TRAINER = args.trainer
     if _check_args('eval_height'):
         config.EVAL.HEIGHT = args.eval_height
     if _check_args('eval_width'):
@@ -189,6 +192,7 @@ def get_parser() -> argparse.ArgumentParser:
     parser.add_argument('--ckpt', type=str)
     parser.add_argument('--finetune', action='store_true')
     parser.add_argument('--layers', type=int)
+    parser.add_argument('--trainer', type=str)
     parser.add_argument('--eval-height', type=int)
     parser.add_argument('--eval-width', type=int)
     parser.add_argument('--thresh', type=float)

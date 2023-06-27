@@ -1,0 +1,903 @@
+[2023-06-28 01:51:16,259] DATA:
+  IMGS_DIR: /srv/datasets2/nutrition5k_dataset/imagery/realsense_overhead
+  METADATAS_PATH: /srv/datasets2/nutrition5k_dataset/metadata/dish_metadata_cafe1.csv
+  NAME: nutrition5k
+  SPLITS_TEST_PATH: /srv/datasets2/nutrition5k_dataset/dish_ids/splits/depth_test_ids.txt
+  SPLITS_TRAIN_PATH: /srv/datasets2/nutrition5k_dataset/dish_ids/splits/depth_train_ids.txt
+EVAL:
+  HEIGHT: 480
+  WIDTH: 640
+MODEL:
+  MASK_WEIGHT: 0.5
+  NAME: openseed
+  PRETRAINED: microsoft/swin-large-patch4-window12-384-in22k
+SAVE_PATH: models/swin/fpnswin_wrot_fc3_drop1_attninit_warmup_150ep_mltscl.pt
+TITLE:
+- fpn openseed swin with aug+rotate fc 3 no dropout 1 layer freeze new attn initialize
+  with warmup 150ep multi scale
+TRAIN:
+  BATCH_SIZE: 32
+  CKPT: null
+  FINETUNE: false
+  LAYERS: 1
+  LOSS: multi
+  LR: 5.0e-05
+  NOISE_REMOVAL_EPOCHS: 20
+  NUM_EPOCHS: 150
+  REMOVAL_WEIGHT: 0.1
+  REMOVE_RATE: 0.03
+  SEED: 12345
+  WARMUP_EPOCHS: 10
+  WEIGHT_DECAY: 0.0001
+
+[2023-06-28 01:51:17,682] Epoch 1/150
+[2023-06-28 01:52:49,107] DATA:
+  IMGS_DIR: /srv/datasets2/nutrition5k_dataset/imagery/realsense_overhead
+  METADATAS_PATH: /srv/datasets2/nutrition5k_dataset/metadata/dish_metadata_cafe1.csv
+  NAME: nutrition5k
+  SPLITS_TEST_PATH: /srv/datasets2/nutrition5k_dataset/dish_ids/splits/depth_test_ids.txt
+  SPLITS_TRAIN_PATH: /srv/datasets2/nutrition5k_dataset/dish_ids/splits/depth_train_ids.txt
+EVAL:
+  HEIGHT: 480
+  WIDTH: 640
+MODEL:
+  MASK_WEIGHT: 0.5
+  NAME: swin
+  PRETRAINED: microsoft/swin-large-patch4-window12-384-in22k
+SAVE_PATH: models/swin/fpnswin_wrot_fc3_drop1_attninit_warmup_150ep_mltscl.pt
+TITLE:
+- fpn openseed swin with aug+rotate fc 3 no dropout 1 layer freeze new attn initialize
+  with warmup 150ep multi scale
+TRAIN:
+  BATCH_SIZE: 32
+  CKPT: null
+  FINETUNE: false
+  LAYERS: 1
+  LOSS: multi
+  LR: 5.0e-05
+  NOISE_REMOVAL_EPOCHS: 20
+  NUM_EPOCHS: 150
+  REMOVAL_WEIGHT: 0.1
+  REMOVE_RATE: 0.03
+  SEED: 12345
+  WARMUP_EPOCHS: 10
+  WEIGHT_DECAY: 0.0001
+
+[2023-06-28 01:52:50,576] Epoch 1/150
+[2023-06-28 01:59:27,815] DATA:
+  IMGS_DIR: /srv/datasets2/nutrition5k_dataset/imagery/realsense_overhead
+  METADATAS_PATH: /srv/datasets2/nutrition5k_dataset/metadata/dish_metadata_cafe1.csv
+  NAME: nutrition5k
+  SPLITS_TEST_PATH: /srv/datasets2/nutrition5k_dataset/dish_ids/splits/depth_test_ids.txt
+  SPLITS_TRAIN_PATH: /srv/datasets2/nutrition5k_dataset/dish_ids/splits/depth_train_ids.txt
+EVAL:
+  HEIGHT: 480
+  WIDTH: 640
+MODEL:
+  MASK_WEIGHT: 0.5
+  NAME: swin
+  PRETRAINED: microsoft/swin-large-patch4-window12-384-in22k
+SAVE_PATH: models/swin/fpnswin_wrot_fc3_drop1_attninit_warmup_150ep_mltscl.pt
+TITLE:
+- fpn openseed swin with aug+rotate fc 3 no dropout 1 layer freeze new attn initialize
+  with warmup 150ep multi scale
+TRAIN:
+  BATCH_SIZE: 32
+  CKPT: null
+  FINETUNE: false
+  LAYERS: 1
+  LOSS: multi
+  LR: 5.0e-05
+  NOISE_REMOVAL_EPOCHS: 20
+  NUM_EPOCHS: 150
+  REMOVAL_WEIGHT: 0.1
+  REMOVE_RATE: 0.03
+  SEED: 12345
+  WARMUP_EPOCHS: 10
+  WEIGHT_DECAY: 0.0001
+
+[2023-06-28 01:59:29,432] Epoch 1/150
+[2023-06-28 02:00:39,289] DATA:
+  IMGS_DIR: /srv/datasets2/nutrition5k_dataset/imagery/realsense_overhead
+  METADATAS_PATH: /srv/datasets2/nutrition5k_dataset/metadata/dish_metadata_cafe1.csv
+  NAME: nutrition5k
+  SPLITS_TEST_PATH: /srv/datasets2/nutrition5k_dataset/dish_ids/splits/depth_test_ids.txt
+  SPLITS_TRAIN_PATH: /srv/datasets2/nutrition5k_dataset/dish_ids/splits/depth_train_ids.txt
+EVAL:
+  HEIGHT: 480
+  WIDTH: 640
+MODEL:
+  MASK_WEIGHT: 0.5
+  NAME: swin
+  PRETRAINED: microsoft/swin-large-patch4-window12-384-in22k
+SAVE_PATH: models/swin/fpnswin_wrot_fc3_drop1_attninit_warmup_150ep_mltscl.pt
+TITLE:
+- fpn openseed swin with aug+rotate fc 3 no dropout 1 layer freeze new attn initialize
+  with warmup 150ep multi scale
+TRAIN:
+  BATCH_SIZE: 32
+  CKPT: null
+  FINETUNE: false
+  LAYERS: 1
+  LOSS: multi
+  LR: 5.0e-05
+  NOISE_REMOVAL_EPOCHS: 20
+  NUM_EPOCHS: 150
+  REMOVAL_WEIGHT: 0.1
+  REMOVE_RATE: 0.03
+  SEED: 12345
+  WARMUP_EPOCHS: 10
+  WEIGHT_DECAY: 0.0001
+
+[2023-06-28 02:00:40,993] Epoch 1/150
+[2023-06-28 02:03:43,894] DATA:
+  IMGS_DIR: /srv/datasets2/nutrition5k_dataset/imagery/realsense_overhead
+  METADATAS_PATH: /srv/datasets2/nutrition5k_dataset/metadata/dish_metadata_cafe1.csv
+  NAME: nutrition5k
+  SPLITS_TEST_PATH: /srv/datasets2/nutrition5k_dataset/dish_ids/splits/depth_test_ids.txt
+  SPLITS_TRAIN_PATH: /srv/datasets2/nutrition5k_dataset/dish_ids/splits/depth_train_ids.txt
+EVAL:
+  HEIGHT: 480
+  WIDTH: 640
+MODEL:
+  MASK_WEIGHT: 0.5
+  NAME: swin
+  PRETRAINED: microsoft/swin-large-patch4-window12-384-in22k
+SAVE_PATH: models/swin/fpnswin_wrot_fc3_drop1_attninit_warmup_150ep_mltscl.pt
+TITLE:
+- fpn openseed swin with aug+rotate fc 3 no dropout 1 layer freeze new attn initialize
+  with warmup 150ep multi scale
+TRAIN:
+  BATCH_SIZE: 32
+  CKPT: null
+  FINETUNE: false
+  LAYERS: 1
+  LOSS: multi
+  LR: 5.0e-05
+  NOISE_REMOVAL_EPOCHS: 20
+  NUM_EPOCHS: 150
+  REMOVAL_WEIGHT: 0.1
+  REMOVE_RATE: 0.03
+  SEED: 12345
+  WARMUP_EPOCHS: 10
+  WEIGHT_DECAY: 0.0001
+
+[2023-06-28 02:03:45,658] Epoch 1/150
+[2023-06-28 02:05:43,211] DATA:
+  IMGS_DIR: /srv/datasets2/nutrition5k_dataset/imagery/realsense_overhead
+  METADATAS_PATH: /srv/datasets2/nutrition5k_dataset/metadata/dish_metadata_cafe1.csv
+  NAME: nutrition5k
+  SPLITS_TEST_PATH: /srv/datasets2/nutrition5k_dataset/dish_ids/splits/depth_test_ids.txt
+  SPLITS_TRAIN_PATH: /srv/datasets2/nutrition5k_dataset/dish_ids/splits/depth_train_ids.txt
+EVAL:
+  HEIGHT: 480
+  WIDTH: 640
+MODEL:
+  MASK_WEIGHT: 0.5
+  NAME: swin
+  PRETRAINED: microsoft/swin-large-patch4-window12-384-in22k
+SAVE_PATH: models/swin/fpnswin_wrot_fc3_drop1_attninit_warmup_150ep_mltscl.pt
+TITLE:
+- fpn openseed swin with aug+rotate fc 3 no dropout 1 layer freeze new attn initialize
+  with warmup 150ep multi scale
+TRAIN:
+  BATCH_SIZE: 32
+  CKPT: null
+  FINETUNE: false
+  LAYERS: 1
+  LOSS: multi
+  LR: 5.0e-05
+  NOISE_REMOVAL_EPOCHS: 20
+  NUM_EPOCHS: 150
+  REMOVAL_WEIGHT: 0.1
+  REMOVE_RATE: 0.03
+  SEED: 12345
+  WARMUP_EPOCHS: 10
+  WEIGHT_DECAY: 0.0001
+
+[2023-06-28 02:05:44,653] Epoch 1/150
+[2023-06-28 02:09:59,754] DATA:
+  IMGS_DIR: /srv/datasets2/nutrition5k_dataset/imagery/realsense_overhead
+  METADATAS_PATH: /srv/datasets2/nutrition5k_dataset/metadata/dish_metadata_cafe1.csv
+  NAME: nutrition5k
+  SPLITS_TEST_PATH: /srv/datasets2/nutrition5k_dataset/dish_ids/splits/depth_test_ids.txt
+  SPLITS_TRAIN_PATH: /srv/datasets2/nutrition5k_dataset/dish_ids/splits/depth_train_ids.txt
+EVAL:
+  HEIGHT: 480
+  WIDTH: 640
+MODEL:
+  MASK_WEIGHT: 0.5
+  NAME: swin
+  PRETRAINED: microsoft/swin-large-patch4-window12-384-in22k
+SAVE_PATH: models/swin/fpnswin_wrot_fc3_drop1_attninit_warmup_150ep_mltscl.pt
+TITLE:
+- fpn openseed swin with aug+rotate fc 3 no dropout 1 layer freeze new attn initialize
+  with warmup 150ep multi scale
+TRAIN:
+  BATCH_SIZE: 32
+  CKPT: null
+  FINETUNE: false
+  LAYERS: 1
+  LOSS: multi
+  LR: 5.0e-05
+  NOISE_REMOVAL_EPOCHS: 20
+  NUM_EPOCHS: 150
+  REMOVAL_WEIGHT: 0.1
+  REMOVE_RATE: 0.03
+  SEED: 12345
+  WARMUP_EPOCHS: 10
+  WEIGHT_DECAY: 0.0001
+
+[2023-06-28 02:10:01,334] Epoch 1/150
+[2023-06-28 02:14:05,947] DATA:
+  IMGS_DIR: /srv/datasets2/nutrition5k_dataset/imagery/realsense_overhead
+  METADATAS_PATH: /srv/datasets2/nutrition5k_dataset/metadata/dish_metadata_cafe1.csv
+  NAME: nutrition5k
+  SPLITS_TEST_PATH: /srv/datasets2/nutrition5k_dataset/dish_ids/splits/depth_test_ids.txt
+  SPLITS_TRAIN_PATH: /srv/datasets2/nutrition5k_dataset/dish_ids/splits/depth_train_ids.txt
+EVAL:
+  HEIGHT: 480
+  WIDTH: 640
+MODEL:
+  MASK_WEIGHT: 0.5
+  NAME: swin
+  PRETRAINED: microsoft/swin-tiny-patch4-window7-224
+SAVE_PATH: models/swin/fpnswin_wrot_fc3_drop1_attninit_warmup_150ep_mltscl.pt
+TITLE:
+- fpn openseed swin with aug+rotate fc 3 no dropout 1 layer freeze new attn initialize
+  with warmup 150ep multi scale
+TRAIN:
+  BATCH_SIZE: 32
+  CKPT: null
+  FINETUNE: false
+  LAYERS: 1
+  LOSS: multi
+  LR: 5.0e-05
+  NOISE_REMOVAL_EPOCHS: 20
+  NUM_EPOCHS: 150
+  REMOVAL_WEIGHT: 0.1
+  REMOVE_RATE: 0.03
+  SEED: 12345
+  WARMUP_EPOCHS: 10
+  WEIGHT_DECAY: 0.0001
+
+[2023-06-28 02:14:07,414] Epoch 1/150
+[2023-06-28 02:28:15,058] DATA:
+  IMGS_DIR: /srv/datasets2/nutrition5k_dataset/imagery/realsense_overhead
+  METADATAS_PATH: /srv/datasets2/nutrition5k_dataset/metadata/dish_metadata_cafe1.csv
+  NAME: nutrition5k
+  SPLITS_TEST_PATH: /srv/datasets2/nutrition5k_dataset/dish_ids/splits/depth_test_ids.txt
+  SPLITS_TRAIN_PATH: /srv/datasets2/nutrition5k_dataset/dish_ids/splits/depth_train_ids.txt
+EVAL:
+  HEIGHT: 480
+  WIDTH: 640
+MODEL:
+  MASK_WEIGHT: 0.5
+  NAME: swin
+  PRETRAINED: microsoft/swin-tiny-patch4-window7-224
+SAVE_PATH: models/swin/fpnswin_wrot_fc3_drop1_attninit_warmup_150ep_mltscl.pt
+TITLE:
+- fpn openseed swin with aug+rotate fc 3 no dropout 1 layer freeze new attn initialize
+  with warmup 150ep multi scale
+TRAIN:
+  BATCH_SIZE: 32
+  CKPT: null
+  FINETUNE: false
+  LAYERS: 1
+  LOSS: multi
+  LR: 5.0e-05
+  NOISE_REMOVAL_EPOCHS: 20
+  NUM_EPOCHS: 150
+  REMOVAL_WEIGHT: 0.1
+  REMOVE_RATE: 0.03
+  SEED: 12345
+  WARMUP_EPOCHS: 10
+  WEIGHT_DECAY: 0.0001
+
+[2023-06-28 02:28:16,526] Epoch 1/150
+[2023-06-28 02:29:11,804] DATA:
+  IMGS_DIR: /srv/datasets2/nutrition5k_dataset/imagery/realsense_overhead
+  METADATAS_PATH: /srv/datasets2/nutrition5k_dataset/metadata/dish_metadata_cafe1.csv
+  NAME: nutrition5k
+  SPLITS_TEST_PATH: /srv/datasets2/nutrition5k_dataset/dish_ids/splits/depth_test_ids.txt
+  SPLITS_TRAIN_PATH: /srv/datasets2/nutrition5k_dataset/dish_ids/splits/depth_train_ids.txt
+EVAL:
+  HEIGHT: 480
+  WIDTH: 640
+MODEL:
+  MASK_WEIGHT: 0.5
+  NAME: swin
+  PRETRAINED: microsoft/swin-tiny-patch4-window7-224
+SAVE_PATH: models/swin/fpnswin_wrot_fc3_drop1_attninit_warmup_150ep_mltscl.pt
+TITLE:
+- fpn openseed swin with aug+rotate fc 3 no dropout 1 layer freeze new attn initialize
+  with warmup 150ep multi scale
+TRAIN:
+  BATCH_SIZE: 32
+  CKPT: null
+  FINETUNE: false
+  LAYERS: 1
+  LOSS: multi
+  LR: 5.0e-05
+  NOISE_REMOVAL_EPOCHS: 20
+  NUM_EPOCHS: 150
+  REMOVAL_WEIGHT: 0.1
+  REMOVE_RATE: 0.03
+  SEED: 12345
+  WARMUP_EPOCHS: 10
+  WEIGHT_DECAY: 0.0001
+
+[2023-06-28 02:29:12,717] Epoch 1/150
+[2023-06-28 02:36:24,120] DATA:
+  IMGS_DIR: /srv/datasets2/nutrition5k_dataset/imagery/realsense_overhead
+  METADATAS_PATH: /srv/datasets2/nutrition5k_dataset/metadata/dish_metadata_cafe1.csv
+  NAME: nutrition5k
+  SPLITS_TEST_PATH: /srv/datasets2/nutrition5k_dataset/dish_ids/splits/depth_test_ids.txt
+  SPLITS_TRAIN_PATH: /srv/datasets2/nutrition5k_dataset/dish_ids/splits/depth_train_ids.txt
+EVAL:
+  HEIGHT: 480
+  WIDTH: 640
+MODEL:
+  MASK_WEIGHT: 0.5
+  NAME: swin
+  PRETRAINED: microsoft/swin-tiny-patch4-window7-224
+SAVE_PATH: models/swin/fpnswin_wrot_fc3_drop1_attninit_warmup_150ep_mltscl.pt
+TITLE:
+- fpn openseed swin with aug+rotate fc 3 no dropout 1 layer freeze new attn initialize
+  with warmup 150ep multi scale
+TRAIN:
+  BATCH_SIZE: 32
+  CKPT: null
+  FINETUNE: false
+  LAYERS: 1
+  LOSS: multi
+  LR: 5.0e-05
+  NOISE_REMOVAL_EPOCHS: 20
+  NUM_EPOCHS: 150
+  REMOVAL_WEIGHT: 0.1
+  REMOVE_RATE: 0.03
+  SEED: 12345
+  WARMUP_EPOCHS: 10
+  WEIGHT_DECAY: 0.0001
+
+[2023-06-28 02:36:25,356] Epoch 1/150
+[2023-06-28 02:38:01,540] DATA:
+  IMGS_DIR: /srv/datasets2/nutrition5k_dataset/imagery/realsense_overhead
+  METADATAS_PATH: /srv/datasets2/nutrition5k_dataset/metadata/dish_metadata_cafe1.csv
+  NAME: nutrition5k
+  SPLITS_TEST_PATH: /srv/datasets2/nutrition5k_dataset/dish_ids/splits/depth_test_ids.txt
+  SPLITS_TRAIN_PATH: /srv/datasets2/nutrition5k_dataset/dish_ids/splits/depth_train_ids.txt
+EVAL:
+  HEIGHT: 480
+  WIDTH: 640
+MODEL:
+  MASK_WEIGHT: 0.5
+  NAME: swin
+  PRETRAINED: microsoft/swin-tiny-patch4-window7-224
+SAVE_PATH: models/swin/fpnswin_wrot_fc3_drop1_attninit_warmup_150ep_mltscl.pt
+TITLE:
+- fpn openseed swin with aug+rotate fc 3 no dropout 1 layer freeze new attn initialize
+  with warmup 150ep multi scale
+TRAIN:
+  BATCH_SIZE: 32
+  CKPT: null
+  FINETUNE: false
+  LAYERS: 1
+  LOSS: multi
+  LR: 5.0e-05
+  NOISE_REMOVAL_EPOCHS: 20
+  NUM_EPOCHS: 150
+  REMOVAL_WEIGHT: 0.1
+  REMOVE_RATE: 0.03
+  SEED: 12345
+  WARMUP_EPOCHS: 10
+  WEIGHT_DECAY: 0.0001
+
+[2023-06-28 02:38:02,847] Epoch 1/150
+[2023-06-28 02:38:59,940] DATA:
+  IMGS_DIR: /srv/datasets2/nutrition5k_dataset/imagery/realsense_overhead
+  METADATAS_PATH: /srv/datasets2/nutrition5k_dataset/metadata/dish_metadata_cafe1.csv
+  NAME: nutrition5k
+  SPLITS_TEST_PATH: /srv/datasets2/nutrition5k_dataset/dish_ids/splits/depth_test_ids.txt
+  SPLITS_TRAIN_PATH: /srv/datasets2/nutrition5k_dataset/dish_ids/splits/depth_train_ids.txt
+EVAL:
+  HEIGHT: 480
+  WIDTH: 640
+MODEL:
+  MASK_WEIGHT: 0.5
+  NAME: swin
+  PRETRAINED: microsoft/swin-tiny-patch4-window7-224
+SAVE_PATH: models/swin/fpnswin_wrot_fc3_drop1_attninit_warmup_150ep_mltscl.pt
+TITLE:
+- fpn openseed swin with aug+rotate fc 3 no dropout 1 layer freeze new attn initialize
+  with warmup 150ep multi scale
+TRAIN:
+  BATCH_SIZE: 32
+  CKPT: null
+  FINETUNE: false
+  LAYERS: 1
+  LOSS: multi
+  LR: 5.0e-05
+  NOISE_REMOVAL_EPOCHS: 20
+  NUM_EPOCHS: 150
+  REMOVAL_WEIGHT: 0.1
+  REMOVE_RATE: 0.03
+  SEED: 12345
+  WARMUP_EPOCHS: 10
+  WEIGHT_DECAY: 0.0001
+
+[2023-06-28 02:39:01,156] Epoch 1/150
+[2023-06-28 02:39:52,897] DATA:
+  IMGS_DIR: /srv/datasets2/nutrition5k_dataset/imagery/realsense_overhead
+  METADATAS_PATH: /srv/datasets2/nutrition5k_dataset/metadata/dish_metadata_cafe1.csv
+  NAME: nutrition5k
+  SPLITS_TEST_PATH: /srv/datasets2/nutrition5k_dataset/dish_ids/splits/depth_test_ids.txt
+  SPLITS_TRAIN_PATH: /srv/datasets2/nutrition5k_dataset/dish_ids/splits/depth_train_ids.txt
+EVAL:
+  HEIGHT: 480
+  WIDTH: 640
+MODEL:
+  MASK_WEIGHT: 0.5
+  NAME: swin
+  PRETRAINED: microsoft/swin-tiny-patch4-window7-224
+SAVE_PATH: models/swin/fpnswin_wrot_fc3_drop1_attninit_warmup_150ep_mltscl.pt
+TITLE:
+- fpn openseed swin with aug+rotate fc 3 no dropout 1 layer freeze new attn initialize
+  with warmup 150ep multi scale
+TRAIN:
+  BATCH_SIZE: 32
+  CKPT: null
+  FINETUNE: false
+  LAYERS: 1
+  LOSS: multi
+  LR: 5.0e-05
+  NOISE_REMOVAL_EPOCHS: 20
+  NUM_EPOCHS: 150
+  REMOVAL_WEIGHT: 0.1
+  REMOVE_RATE: 0.03
+  SEED: 12345
+  WARMUP_EPOCHS: 10
+  WEIGHT_DECAY: 0.0001
+
+[2023-06-28 02:39:53,835] Epoch 1/150
+[2023-06-28 02:40:19,447] DATA:
+  IMGS_DIR: /srv/datasets2/nutrition5k_dataset/imagery/realsense_overhead
+  METADATAS_PATH: /srv/datasets2/nutrition5k_dataset/metadata/dish_metadata_cafe1.csv
+  NAME: nutrition5k
+  SPLITS_TEST_PATH: /srv/datasets2/nutrition5k_dataset/dish_ids/splits/depth_test_ids.txt
+  SPLITS_TRAIN_PATH: /srv/datasets2/nutrition5k_dataset/dish_ids/splits/depth_train_ids.txt
+EVAL:
+  HEIGHT: 480
+  WIDTH: 640
+MODEL:
+  MASK_WEIGHT: 0.5
+  NAME: swin
+  PRETRAINED: microsoft/swin-tiny-patch4-window7-224
+SAVE_PATH: models/swin/fpnswin_wrot_fc3_drop1_attninit_warmup_150ep_mltscl.pt
+TITLE:
+- fpn openseed swin with aug+rotate fc 3 no dropout 1 layer freeze new attn initialize
+  with warmup 150ep multi scale
+TRAIN:
+  BATCH_SIZE: 16
+  CKPT: null
+  FINETUNE: false
+  LAYERS: 1
+  LOSS: multi
+  LR: 5.0e-05
+  NOISE_REMOVAL_EPOCHS: 20
+  NUM_EPOCHS: 150
+  REMOVAL_WEIGHT: 0.1
+  REMOVE_RATE: 0.03
+  SEED: 12345
+  WARMUP_EPOCHS: 10
+  WEIGHT_DECAY: 0.0001
+
+[2023-06-28 02:40:20,539] Epoch 1/150
+[2023-06-28 02:42:56,507] train loss: 3.6257
+[2023-06-28 02:42:56,508] cal loss: 166.9208
+[2023-06-28 02:42:56,508] cal percent loss: 0.6546
+[2023-06-28 02:42:56,508] mass loss: 127.5174
+[2023-06-28 02:42:56,508] mass percent loss: 0.5849
+[2023-06-28 02:42:56,508] fat loss: 10.1472
+[2023-06-28 02:42:56,508] fat percent loss: 0.7990
+[2023-06-28 02:42:56,509] carb loss: 12.3463
+[2023-06-28 02:42:56,509] carb percent loss: 0.6397
+[2023-06-28 02:42:56,509] protein loss: 15.6985
+[2023-06-28 02:42:56,509] protein percent loss: 0.8673
+[2023-06-28 02:42:56,509] Epoch 1/150
+[2023-06-28 02:43:18,348] test loss: 3.7078
+[2023-06-28 02:43:18,348] cal loss: 167.8747
+[2023-06-28 02:43:18,348] cal percent loss: 0.6583
+[2023-06-28 02:43:18,348] mass loss: 128.1319
+[2023-06-28 02:43:18,349] mass percent loss: 0.5878
+[2023-06-28 02:43:18,349] fat loss: 10.6047
+[2023-06-28 02:43:18,349] fat percent loss: 0.8350
+[2023-06-28 02:43:18,349] carb loss: 13.5853
+[2023-06-28 02:43:18,349] carb percent loss: 0.7039
+[2023-06-28 02:43:18,349] protein loss: 15.3816
+[2023-06-28 02:43:18,349] protein percent loss: 0.8498
+[2023-06-28 02:43:18,350] Epoch 2/150
+[2023-06-28 02:45:52,245] train loss: 2.9834
+[2023-06-28 02:45:52,246] cal loss: 137.2289
+[2023-06-28 02:45:52,246] cal percent loss: 0.5382
+[2023-06-28 02:45:52,246] mass loss: 95.3135
+[2023-06-28 02:45:52,246] mass percent loss: 0.4372
+[2023-06-28 02:45:52,246] fat loss: 8.6296
+[2023-06-28 02:45:52,246] fat percent loss: 0.6795
+[2023-06-28 02:45:52,246] carb loss: 11.3945
+[2023-06-28 02:45:52,247] carb percent loss: 0.5904
+[2023-06-28 02:45:52,247] protein loss: 12.5787
+[2023-06-28 02:45:52,247] protein percent loss: 0.6950
+[2023-06-28 02:45:52,247] Epoch 2/150
+[2023-06-28 02:46:14,005] test loss: 2.6473
+[2023-06-28 02:46:14,005] cal loss: 113.6604
+[2023-06-28 02:46:14,005] cal percent loss: 0.4457
+[2023-06-28 02:46:14,005] mass loss: 71.8635
+[2023-06-28 02:46:14,005] mass percent loss: 0.3296
+[2023-06-28 02:46:14,006] fat loss: 8.2102
+[2023-06-28 02:46:14,006] fat percent loss: 0.6465
+[2023-06-28 02:46:14,006] carb loss: 11.9841
+[2023-06-28 02:46:14,006] carb percent loss: 0.6209
+[2023-06-28 02:46:14,006] protein loss: 10.9477
+[2023-06-28 02:46:14,006] protein percent loss: 0.6048
+[2023-06-28 02:46:14,006] Epoch 3/150
+[2023-06-28 02:49:03,771] train loss: 2.3409
+[2023-06-28 02:49:03,772] cal loss: 101.0033
+[2023-06-28 02:49:03,772] cal percent loss: 0.3961
+[2023-06-28 02:49:03,772] mass loss: 66.9451
+[2023-06-28 02:49:03,772] mass percent loss: 0.3071
+[2023-06-28 02:49:03,773] fat loss: 7.3301
+[2023-06-28 02:49:03,773] fat percent loss: 0.5772
+[2023-06-28 02:49:03,773] carb loss: 10.0443
+[2023-06-28 02:49:03,773] carb percent loss: 0.5204
+[2023-06-28 02:49:03,773] protein loss: 9.6103
+[2023-06-28 02:49:03,773] protein percent loss: 0.5310
+[2023-06-28 02:49:03,773] Epoch 3/150
+[2023-06-28 02:49:25,680] test loss: 2.3330
+[2023-06-28 02:49:25,681] cal loss: 97.2676
+[2023-06-28 02:49:25,681] cal percent loss: 0.3814
+[2023-06-28 02:49:25,681] mass loss: 60.0264
+[2023-06-28 02:49:25,681] mass percent loss: 0.2754
+[2023-06-28 02:49:25,682] fat loss: 7.4416
+[2023-06-28 02:49:25,682] fat percent loss: 0.5860
+[2023-06-28 02:49:25,682] carb loss: 10.6176
+[2023-06-28 02:49:25,682] carb percent loss: 0.5501
+[2023-06-28 02:49:25,682] protein loss: 9.9617
+[2023-06-28 02:49:25,682] protein percent loss: 0.5504
+[2023-06-28 02:49:25,682] Epoch 4/150
+[2023-06-28 02:52:00,936] train loss: 2.0725
+[2023-06-28 02:52:00,937] cal loss: 85.8876
+[2023-06-28 02:52:00,937] cal percent loss: 0.3368
+[2023-06-28 02:52:00,937] mass loss: 58.4548
+[2023-06-28 02:52:00,937] mass percent loss: 0.2681
+[2023-06-28 02:52:00,938] fat loss: 6.6728
+[2023-06-28 02:52:00,938] fat percent loss: 0.5254
+[2023-06-28 02:52:00,938] carb loss: 9.4289
+[2023-06-28 02:52:00,938] carb percent loss: 0.4885
+[2023-06-28 02:52:00,938] protein loss: 8.1702
+[2023-06-28 02:52:00,938] protein percent loss: 0.4514
+[2023-06-28 02:52:00,938] Epoch 4/150
+[2023-06-28 02:52:22,766] test loss: 2.1194
+[2023-06-28 02:52:22,767] cal loss: 87.1146
+[2023-06-28 02:52:22,767] cal percent loss: 0.3416
+[2023-06-28 02:52:22,767] mass loss: 59.4885
+[2023-06-28 02:52:22,767] mass percent loss: 0.2729
+[2023-06-28 02:52:22,767] fat loss: 7.1176
+[2023-06-28 02:52:22,767] fat percent loss: 0.5604
+[2023-06-28 02:52:22,768] carb loss: 9.4510
+[2023-06-28 02:52:22,768] carb percent loss: 0.4897
+[2023-06-28 02:52:22,768] protein loss: 8.1863
+[2023-06-28 02:52:22,768] protein percent loss: 0.4523
+[2023-06-28 02:52:22,768] Epoch 5/150
+[2023-06-28 02:55:00,225] train loss: 1.9156
+[2023-06-28 02:55:00,225] cal loss: 81.4038
+[2023-06-28 02:55:00,225] cal percent loss: 0.3192
+[2023-06-28 02:55:00,225] mass loss: 52.3999
+[2023-06-28 02:55:00,226] mass percent loss: 0.2404
+[2023-06-28 02:55:00,226] fat loss: 6.1293
+[2023-06-28 02:55:00,226] fat percent loss: 0.4826
+[2023-06-28 02:55:00,226] carb loss: 8.8854
+[2023-06-28 02:55:00,226] carb percent loss: 0.4604
+[2023-06-28 02:55:00,226] protein loss: 7.4717
+[2023-06-28 02:55:00,226] protein percent loss: 0.4128
+[2023-06-28 02:55:00,226] Epoch 5/150
+[2023-06-28 02:55:22,234] test loss: 1.8933
+[2023-06-28 02:55:22,235] cal loss: 75.8280
+[2023-06-28 02:55:22,235] cal percent loss: 0.2974
+[2023-06-28 02:55:22,235] mass loss: 50.3918
+[2023-06-28 02:55:22,235] mass percent loss: 0.2312
+[2023-06-28 02:55:22,235] fat loss: 6.1361
+[2023-06-28 02:55:22,235] fat percent loss: 0.4832
+[2023-06-28 02:55:22,235] carb loss: 9.6924
+[2023-06-28 02:55:22,236] carb percent loss: 0.5022
+[2023-06-28 02:55:22,236] protein loss: 7.0399
+[2023-06-28 02:55:22,236] protein percent loss: 0.3889
+[2023-06-28 02:55:22,236] Epoch 6/150
+[2023-06-28 02:58:03,178] train loss: 1.7236
+[2023-06-28 02:58:03,179] cal loss: 72.0087
+[2023-06-28 02:58:03,179] cal percent loss: 0.2824
+[2023-06-28 02:58:03,179] mass loss: 45.3886
+[2023-06-28 02:58:03,179] mass percent loss: 0.2082
+[2023-06-28 02:58:03,180] fat loss: 5.6415
+[2023-06-28 02:58:03,180] fat percent loss: 0.4442
+[2023-06-28 02:58:03,180] carb loss: 8.0545
+[2023-06-28 02:58:03,180] carb percent loss: 0.4173
+[2023-06-28 02:58:03,180] protein loss: 6.8088
+[2023-06-28 02:58:03,180] protein percent loss: 0.3762
+[2023-06-28 02:58:03,180] Epoch 6/150
+[2023-06-28 02:58:25,036] test loss: 1.7340
+[2023-06-28 02:58:25,037] cal loss: 73.8869
+[2023-06-28 02:58:25,037] cal percent loss: 0.2898
+[2023-06-28 02:58:25,037] mass loss: 43.1437
+[2023-06-28 02:58:25,037] mass percent loss: 0.1979
+[2023-06-28 02:58:25,037] fat loss: 5.4793
+[2023-06-28 02:58:25,037] fat percent loss: 0.4314
+[2023-06-28 02:58:25,037] carb loss: 8.9689
+[2023-06-28 02:58:25,037] carb percent loss: 0.4647
+[2023-06-28 02:58:25,037] protein loss: 6.5416
+[2023-06-28 02:58:25,037] protein percent loss: 0.3614
+[2023-06-28 02:58:25,038] Epoch 7/150
+[2023-06-28 03:01:13,130] train loss: 1.5959
+[2023-06-28 03:01:13,131] cal loss: 67.2120
+[2023-06-28 03:01:13,132] cal percent loss: 0.2636
+[2023-06-28 03:01:13,132] mass loss: 41.8452
+[2023-06-28 03:01:13,132] mass percent loss: 0.1920
+[2023-06-28 03:01:13,132] fat loss: 5.1102
+[2023-06-28 03:01:13,132] fat percent loss: 0.4024
+[2023-06-28 03:01:13,132] carb loss: 7.4606
+[2023-06-28 03:01:13,132] carb percent loss: 0.3866
+[2023-06-28 03:01:13,132] protein loss: 6.4459
+[2023-06-28 03:01:13,132] protein percent loss: 0.3561
+[2023-06-28 03:01:13,132] Epoch 7/150
+[2023-06-28 03:01:35,116] test loss: 1.6901
+[2023-06-28 03:01:35,117] cal loss: 68.8838
+[2023-06-28 03:01:35,117] cal percent loss: 0.2701
+[2023-06-28 03:01:35,117] mass loss: 45.6816
+[2023-06-28 03:01:35,117] mass percent loss: 0.2095
+[2023-06-28 03:01:35,117] fat loss: 4.8262
+[2023-06-28 03:01:35,117] fat percent loss: 0.3800
+[2023-06-28 03:01:35,117] carb loss: 8.8315
+[2023-06-28 03:01:35,117] carb percent loss: 0.4576
+[2023-06-28 03:01:35,118] protein loss: 6.9085
+[2023-06-28 03:01:35,118] protein percent loss: 0.3817
+[2023-06-28 03:01:35,118] Epoch 8/150
+[2023-06-28 03:04:12,190] train loss: 1.4752
+[2023-06-28 03:04:12,191] cal loss: 61.5943
+[2023-06-28 03:04:12,191] cal percent loss: 0.2415
+[2023-06-28 03:04:12,191] mass loss: 39.0467
+[2023-06-28 03:04:12,191] mass percent loss: 0.1791
+[2023-06-28 03:04:12,191] fat loss: 4.7039
+[2023-06-28 03:04:12,191] fat percent loss: 0.3704
+[2023-06-28 03:04:12,191] carb loss: 6.9318
+[2023-06-28 03:04:12,191] carb percent loss: 0.3592
+[2023-06-28 03:04:12,192] protein loss: 5.9597
+[2023-06-28 03:04:12,192] protein percent loss: 0.3293
+[2023-06-28 03:04:12,192] Epoch 8/150
+[2023-06-28 03:04:34,173] test loss: 1.9085
+[2023-06-28 03:04:34,173] cal loss: 74.1466
+[2023-06-28 03:04:34,173] cal percent loss: 0.2908
+[2023-06-28 03:04:34,174] mass loss: 50.8669
+[2023-06-28 03:04:34,174] mass percent loss: 0.2333
+[2023-06-28 03:04:34,174] fat loss: 4.4676
+[2023-06-28 03:04:34,174] fat percent loss: 0.3518
+[2023-06-28 03:04:34,174] carb loss: 13.7184
+[2023-06-28 03:04:34,174] carb percent loss: 0.7108
+[2023-06-28 03:04:34,174] protein loss: 6.3090
+[2023-06-28 03:04:34,174] protein percent loss: 0.3486
+[2023-06-28 03:04:34,175] Epoch 9/150
+[2023-06-28 03:07:17,690] train loss: 1.4669
+[2023-06-28 03:07:17,691] cal loss: 60.9103
+[2023-06-28 03:07:17,691] cal percent loss: 0.2389
+[2023-06-28 03:07:17,691] mass loss: 37.7866
+[2023-06-28 03:07:17,691] mass percent loss: 0.1733
+[2023-06-28 03:07:17,691] fat loss: 4.7758
+[2023-06-28 03:07:17,691] fat percent loss: 0.3760
+[2023-06-28 03:07:17,691] carb loss: 6.7717
+[2023-06-28 03:07:17,691] carb percent loss: 0.3509
+[2023-06-28 03:07:17,691] protein loss: 6.0483
+[2023-06-28 03:07:17,692] protein percent loss: 0.3342
+[2023-06-28 03:07:17,692] Epoch 9/150
+[2023-06-28 03:07:39,754] test loss: 1.4483
+[2023-06-28 03:07:39,755] cal loss: 57.3283
+[2023-06-28 03:07:39,755] cal percent loss: 0.2248
+[2023-06-28 03:07:39,755] mass loss: 41.3053
+[2023-06-28 03:07:39,756] mass percent loss: 0.1895
+[2023-06-28 03:07:39,756] fat loss: 4.3304
+[2023-06-28 03:07:39,756] fat percent loss: 0.3410
+[2023-06-28 03:07:39,756] carb loss: 7.1752
+[2023-06-28 03:07:39,756] carb percent loss: 0.3718
+[2023-06-28 03:07:39,756] protein loss: 5.8700
+[2023-06-28 03:07:39,756] protein percent loss: 0.3243
+[2023-06-28 03:07:39,756] Epoch 10/150
+[2023-06-28 03:10:28,796] train loss: 1.4265
+[2023-06-28 03:10:28,797] cal loss: 61.4292
+[2023-06-28 03:10:28,797] cal percent loss: 0.2409
+[2023-06-28 03:10:28,797] mass loss: 38.2754
+[2023-06-28 03:10:28,797] mass percent loss: 0.1756
+[2023-06-28 03:10:28,797] fat loss: 4.4814
+[2023-06-28 03:10:28,797] fat percent loss: 0.3529
+[2023-06-28 03:10:28,797] carb loss: 6.4936
+[2023-06-28 03:10:28,798] carb percent loss: 0.3365
+[2023-06-28 03:10:28,798] protein loss: 5.8192
+[2023-06-28 03:10:28,798] protein percent loss: 0.3215
+[2023-06-28 03:10:28,798] Epoch 10/150
+[2023-06-28 03:10:50,681] test loss: 1.6929
+[2023-06-28 03:10:50,682] cal loss: 76.5847
+[2023-06-28 03:10:50,682] cal percent loss: 0.3003
+[2023-06-28 03:10:50,682] mass loss: 49.0474
+[2023-06-28 03:10:50,682] mass percent loss: 0.2250
+[2023-06-28 03:10:50,682] fat loss: 4.3191
+[2023-06-28 03:10:50,682] fat percent loss: 0.3401
+[2023-06-28 03:10:50,683] carb loss: 9.5516
+[2023-06-28 03:10:50,683] carb percent loss: 0.4949
+[2023-06-28 03:10:50,683] protein loss: 5.9557
+[2023-06-28 03:10:50,683] protein percent loss: 0.3290
+[2023-06-28 03:10:50,683] Epoch 11/150
+[2023-06-28 03:13:23,640] train loss: 1.3257
+[2023-06-28 03:13:23,640] cal loss: 55.4355
+[2023-06-28 03:13:23,641] cal percent loss: 0.2174
+[2023-06-28 03:13:23,641] mass loss: 34.8495
+[2023-06-28 03:13:23,641] mass percent loss: 0.1599
+[2023-06-28 03:13:23,641] fat loss: 4.3109
+[2023-06-28 03:13:23,641] fat percent loss: 0.3394
+[2023-06-28 03:13:23,641] carb loss: 5.9470
+[2023-06-28 03:13:23,641] carb percent loss: 0.3081
+[2023-06-28 03:13:23,641] protein loss: 5.5075
+[2023-06-28 03:13:23,641] protein percent loss: 0.3043
+[2023-06-28 03:13:23,642] Epoch 11/150
+[2023-06-28 03:13:45,700] test loss: 1.6167
+[2023-06-28 03:13:45,701] cal loss: 66.1018
+[2023-06-28 03:13:45,701] cal percent loss: 0.2592
+[2023-06-28 03:13:45,701] mass loss: 53.4071
+[2023-06-28 03:13:45,701] mass percent loss: 0.2450
+[2023-06-28 03:13:45,701] fat loss: 4.4637
+[2023-06-28 03:13:45,701] fat percent loss: 0.3515
+[2023-06-28 03:13:45,701] carb loss: 8.2329
+[2023-06-28 03:13:45,701] carb percent loss: 0.4266
+[2023-06-28 03:13:45,702] protein loss: 5.8105
+[2023-06-28 03:13:45,702] protein percent loss: 0.3210
+[2023-06-28 03:13:45,702] Epoch 12/150
+[2023-06-28 03:16:23,427] train loss: 1.3350
+[2023-06-28 03:16:23,427] cal loss: 56.4985
+[2023-06-28 03:16:23,427] cal percent loss: 0.2216
+[2023-06-28 03:16:23,427] mass loss: 35.8472
+[2023-06-28 03:16:23,428] mass percent loss: 0.1644
+[2023-06-28 03:16:23,428] fat loss: 4.2045
+[2023-06-28 03:16:23,428] fat percent loss: 0.3311
+[2023-06-28 03:16:23,428] carb loss: 6.1033
+[2023-06-28 03:16:23,428] carb percent loss: 0.3162
+[2023-06-28 03:16:23,428] protein loss: 5.4939
+[2023-06-28 03:16:23,428] protein percent loss: 0.3035
+[2023-06-28 03:16:23,428] Epoch 12/150
+[2023-06-28 03:16:45,278] test loss: 1.4492
+[2023-06-28 03:16:45,279] cal loss: 60.2027
+[2023-06-28 03:16:45,279] cal percent loss: 0.2361
+[2023-06-28 03:16:45,279] mass loss: 44.1118
+[2023-06-28 03:16:45,279] mass percent loss: 0.2023
+[2023-06-28 03:16:45,280] fat loss: 4.3105
+[2023-06-28 03:16:45,280] fat percent loss: 0.3394
+[2023-06-28 03:16:45,280] carb loss: 6.5390
+[2023-06-28 03:16:45,280] carb percent loss: 0.3388
+[2023-06-28 03:16:45,280] protein loss: 5.8830
+[2023-06-28 03:16:45,280] protein percent loss: 0.3250
+[2023-06-28 03:16:45,280] Epoch 13/150
+[2023-06-28 03:19:27,465] train loss: 1.2689
+[2023-06-28 03:19:27,465] cal loss: 53.7045
+[2023-06-28 03:19:27,465] cal percent loss: 0.2106
+[2023-06-28 03:19:27,465] mass loss: 34.1511
+[2023-06-28 03:19:27,466] mass percent loss: 0.1567
+[2023-06-28 03:19:27,466] fat loss: 4.1444
+[2023-06-28 03:19:27,466] fat percent loss: 0.3263
+[2023-06-28 03:19:27,466] carb loss: 5.6176
+[2023-06-28 03:19:27,466] carb percent loss: 0.2911
+[2023-06-28 03:19:27,466] protein loss: 5.1543
+[2023-06-28 03:19:27,466] protein percent loss: 0.2848
+[2023-06-28 03:19:27,466] Epoch 13/150
+[2023-06-28 03:19:49,390] test loss: 1.4509
+[2023-06-28 03:19:49,390] cal loss: 57.7302
+[2023-06-28 03:19:49,390] cal percent loss: 0.2264
+[2023-06-28 03:19:49,390] mass loss: 43.3107
+[2023-06-28 03:19:49,390] mass percent loss: 0.1987
+[2023-06-28 03:19:49,390] fat loss: 4.3928
+[2023-06-28 03:19:49,390] fat percent loss: 0.3459
+[2023-06-28 03:19:49,390] carb loss: 6.4317
+[2023-06-28 03:19:49,390] carb percent loss: 0.3333
+[2023-06-28 03:19:49,390] protein loss: 6.2163
+[2023-06-28 03:19:49,391] protein percent loss: 0.3434
+[2023-06-28 03:19:49,391] Epoch 14/150
+[2023-06-28 03:22:28,376] train loss: 1.2232
+[2023-06-28 03:22:28,377] cal loss: 51.9908
+[2023-06-28 03:22:28,377] cal percent loss: 0.2039
+[2023-06-28 03:22:28,377] mass loss: 33.5323
+[2023-06-28 03:22:28,378] mass percent loss: 0.1538
+[2023-06-28 03:22:28,378] fat loss: 3.9769
+[2023-06-28 03:22:28,378] fat percent loss: 0.3131
+[2023-06-28 03:22:28,378] carb loss: 5.4717
+[2023-06-28 03:22:28,378] carb percent loss: 0.2835
+[2023-06-28 03:22:28,378] protein loss: 4.8492
+[2023-06-28 03:22:28,378] protein percent loss: 0.2679
+[2023-06-28 03:22:28,378] Epoch 14/150
+[2023-06-28 03:22:50,238] test loss: 1.5242
+[2023-06-28 03:22:50,238] cal loss: 66.9239
+[2023-06-28 03:22:50,239] cal percent loss: 0.2624
+[2023-06-28 03:22:50,239] mass loss: 41.5989
+[2023-06-28 03:22:50,239] mass percent loss: 0.1908
+[2023-06-28 03:22:50,239] fat loss: 4.2662
+[2023-06-28 03:22:50,239] fat percent loss: 0.3359
+[2023-06-28 03:22:50,239] carb loss: 6.4042
+[2023-06-28 03:22:50,239] carb percent loss: 0.3318
+[2023-06-28 03:22:50,239] protein loss: 7.2843
+[2023-06-28 03:22:50,239] protein percent loss: 0.4024
+[2023-06-28 03:22:50,240] Epoch 15/150
+[2023-06-28 03:25:39,596] train loss: 1.2265
+[2023-06-28 03:25:39,596] cal loss: 52.1454
+[2023-06-28 03:25:39,596] cal percent loss: 0.2045
+[2023-06-28 03:25:39,597] mass loss: 33.3795
+[2023-06-28 03:25:39,597] mass percent loss: 0.1531
+[2023-06-28 03:25:39,597] fat loss: 3.9654
+[2023-06-28 03:25:39,597] fat percent loss: 0.3122
+[2023-06-28 03:25:39,597] carb loss: 5.4339
+[2023-06-28 03:25:39,597] carb percent loss: 0.2815
+[2023-06-28 03:25:39,597] protein loss: 4.9723
+[2023-06-28 03:25:39,597] protein percent loss: 0.2747
+[2023-06-28 03:25:39,597] Epoch 15/150
+[2023-06-28 03:26:01,622] test loss: 1.2582
+[2023-06-28 03:26:01,622] cal loss: 52.3440
+[2023-06-28 03:26:01,622] cal percent loss: 0.2053
+[2023-06-28 03:26:01,623] mass loss: 32.0806
+[2023-06-28 03:26:01,623] mass percent loss: 0.1472
+[2023-06-28 03:26:01,623] fat loss: 3.8810
+[2023-06-28 03:26:01,623] fat percent loss: 0.3056
+[2023-06-28 03:26:01,623] carb loss: 6.2484
+[2023-06-28 03:26:01,623] carb percent loss: 0.3238
+[2023-06-28 03:26:01,623] protein loss: 5.1452
+[2023-06-28 03:26:01,623] protein percent loss: 0.2843
+[2023-06-28 03:26:01,624] Epoch 16/150
+[2023-06-28 03:28:43,610] train loss: 1.2431
+[2023-06-28 03:28:43,611] cal loss: 53.3922
+[2023-06-28 03:28:43,611] cal percent loss: 0.2094
+[2023-06-28 03:28:43,611] mass loss: 34.7014
+[2023-06-28 03:28:43,611] mass percent loss: 0.1592
+[2023-06-28 03:28:43,611] fat loss: 3.9753
+[2023-06-28 03:28:43,612] fat percent loss: 0.3130
+[2023-06-28 03:28:43,612] carb loss: 5.5566
+[2023-06-28 03:28:43,612] carb percent loss: 0.2879
+[2023-06-28 03:28:43,612] protein loss: 4.9051
+[2023-06-28 03:28:43,612] protein percent loss: 0.2710
+[2023-06-28 03:28:43,612] Epoch 16/150
+[2023-06-28 03:29:05,475] test loss: 1.3535
+[2023-06-28 03:29:05,475] cal loss: 48.8918
+[2023-06-28 03:29:05,475] cal percent loss: 0.1917
+[2023-06-28 03:29:05,475] mass loss: 34.0332
+[2023-06-28 03:29:05,475] mass percent loss: 0.1561
+[2023-06-28 03:29:05,475] fat loss: 4.6672
+[2023-06-28 03:29:05,475] fat percent loss: 0.3675
+[2023-06-28 03:29:05,475] carb loss: 6.0703
+[2023-06-28 03:29:05,476] carb percent loss: 0.3145
+[2023-06-28 03:29:05,476] protein loss: 6.1190
+[2023-06-28 03:29:05,476] protein percent loss: 0.3381
+[2023-06-28 03:29:05,476] Epoch 17/150
+[2023-06-28 03:31:43,948] train loss: 1.2495
+[2023-06-28 03:31:43,949] cal loss: 53.0405
+[2023-06-28 03:31:43,949] cal percent loss: 0.2080
+[2023-06-28 03:31:43,949] mass loss: 34.9560
+[2023-06-28 03:31:43,949] mass percent loss: 0.1603
+[2023-06-28 03:31:43,949] fat loss: 4.0380
+[2023-06-28 03:31:43,949] fat percent loss: 0.3180
+[2023-06-28 03:31:43,949] carb loss: 5.4969
+[2023-06-28 03:31:43,950] carb percent loss: 0.2848
+[2023-06-28 03:31:43,950] protein loss: 4.9933
+[2023-06-28 03:31:43,950] protein percent loss: 0.2759
+[2023-06-28 03:31:43,950] Epoch 17/150
+[2023-06-28 03:32:05,890] test loss: 1.2508
+[2023-06-28 03:32:05,890] cal loss: 51.4776
+[2023-06-28 03:32:05,890] cal percent loss: 0.2019
+[2023-06-28 03:32:05,891] mass loss: 35.4713
+[2023-06-28 03:32:05,891] mass percent loss: 0.1627
+[2023-06-28 03:32:05,891] fat loss: 3.8942
+[2023-06-28 03:32:05,891] fat percent loss: 0.3066
+[2023-06-28 03:32:05,891] carb loss: 5.8792
+[2023-06-28 03:32:05,891] carb percent loss: 0.3046
+[2023-06-28 03:32:05,891] protein loss: 4.9699
+[2023-06-28 03:32:05,891] protein percent loss: 0.2746
+[2023-06-28 03:32:05,891] Epoch 18/150

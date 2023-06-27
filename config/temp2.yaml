@@ -11,7 +11,7 @@ SAVE_PATH: models/fixed/fpn_resnet101_wrot_fc3_nodrop_attninit_warmup_smaller_15
 TITLE:
 - fpn with aug+rotate fc 3 no dropout freeze smaller new attn initialize with warmup 150ep multi scale
 TRAIN:
-  BATCH_SIZE: 32
+  BATCH_SIZE: 16
   CKPT: null
   FINETUNE: false
   LAYERS: 1

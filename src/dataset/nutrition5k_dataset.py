@@ -1,6 +1,7 @@
 from pathlib import Path
 from typing import Any, Optional
 from PIL import Image
+import torch
 from yacs.config import CfgNode as CN
 
 import numpy as np
@@ -17,16 +18,18 @@ class Nutrition5kDataset(BaseDataset):
         self.init_metadatas()
 
     @staticmethod
-    def transform_(rgb_img,depth_img):
+    def transform_(rgb_img,depth_img,mask):
         # rotate
         params = transforms.RandomRotation.get_params([-180,180])
         rgb_img = TF.rotate(rgb_img,params)
         depth_img = TF.rotate(depth_img,params,fill=depth_img.max().item())
+        mask = TF.rotate(mask,params)
 
         if np.random.rand() < 0.5:
             rgb_img = TF.hflip(rgb_img)
             depth_img = TF.hflip(depth_img)
-        return rgb_img, depth_img
+            mask = TF.hflip(mask)
+        return rgb_img, depth_img, mask
 
     def init_metadatas(self):
         mean_metadata = self.mean_metadata
@@ -61,14 +64,18 @@ class Nutrition5kDataset(BaseDataset):
         img_dir = Path.joinpath(self.imgs_dir,self.splits[index])
         rgb_path = Path.joinpath(img_dir,'rgb.png')
         depth_path = Path.joinpath(img_dir,'depth_raw.png')
+        mask_path = Path.joinpath(img_dir,'mask.pt')
         rgb_img = Image.open(rgb_path)
         depth_img = Image.open(depth_path)
-        rgb_img = self.transform(rgb_img) 
+        mask = torch.load(mask_path)
+        rgb_img = self.transform(rgb_img)
         depth_img = self.transform_depth(depth_img).float() #type: ignore
         depth_img = self.normalize_depth(depth_img)
-        rgb_img, depth_img = self.transform_(rgb_img, depth_img)
+        mask = mask.unsqueeze(0)
+        rgb_img, depth_img, mask = self.transform_(rgb_img, depth_img, mask)
+        mask = mask.squeeze(0)
         metadata = self.metadatas_dict[self.splits[index]]
-        sample = {'rgb_img': rgb_img, 'depth_img': depth_img, 'metadata': metadata, 'rgb_path': str(rgb_path), 'depth_path': str(depth_path)}
+        sample = {'rgb_img': rgb_img, 'depth_img': depth_img, 'mask': mask, 'metadata': metadata, 'rgb_path': str(rgb_path), 'depth_path': str(depth_path)}
         return sample
 
 def make_dataset(config: Optional[CN], imgs_dir: str = '.', metadatas_path: str = '.', splits_train_path: str = '.', splits_test_path: str = '.', unnormalized_int_tensor: bool = False) -> dict[str, BaseDataset]:

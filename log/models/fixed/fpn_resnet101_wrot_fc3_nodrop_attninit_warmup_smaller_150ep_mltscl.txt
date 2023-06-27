@@ -7247,3 +7247,69 @@ TRAIN:
 [2023-06-26 00:12:41,399] carb percent loss: 0.2820
 [2023-06-26 00:12:41,399] protein loss: 4.4395
 [2023-06-26 00:12:41,399] protein percent loss: 0.2453
+[2023-06-28 03:07:11,372] DATA:
+  IMGS_DIR: /srv/datasets2/nutrition5k_dataset/imagery/realsense_overhead
+  METADATAS_PATH: /srv/datasets2/nutrition5k_dataset/metadata/dish_metadata_cafe1.csv
+  NAME: nutrition5k
+  SPLITS_TEST_PATH: /srv/datasets2/nutrition5k_dataset/dish_ids/splits/depth_test_ids.txt
+  SPLITS_TRAIN_PATH: /srv/datasets2/nutrition5k_dataset/dish_ids/splits/depth_train_ids.txt
+EVAL:
+  HEIGHT: 384
+  WIDTH: 512
+MODEL:
+  MASK_WEIGHT: 0.5
+  NAME: resnet101
+  PRETRAINED: microsoft/resnet-101
+SAVE_PATH: models/fixed/fpn_resnet101_wrot_fc3_nodrop_attninit_warmup_smaller_150ep_mltscl.pt
+TITLE:
+- fpn with aug+rotate fc 3 no dropout freeze smaller new attn initialize with warmup
+  150ep multi scale
+TRAIN:
+  BATCH_SIZE: 32
+  CKPT: null
+  FINETUNE: false
+  LAYERS: 1
+  LOSS: multi
+  LR: 5.0e-05
+  NOISE_REMOVAL_EPOCHS: 20
+  NUM_EPOCHS: 150
+  REMOVAL_WEIGHT: 0.1
+  REMOVE_RATE: 0.03
+  SEED: 12345
+  WARMUP_EPOCHS: 10
+  WEIGHT_DECAY: 0.0001
+
+[2023-06-28 03:07:12,661] Epoch 1/150
+[2023-06-28 03:09:12,942] DATA:
+  IMGS_DIR: /srv/datasets2/nutrition5k_dataset/imagery/realsense_overhead
+  METADATAS_PATH: /srv/datasets2/nutrition5k_dataset/metadata/dish_metadata_cafe1.csv
+  NAME: nutrition5k
+  SPLITS_TEST_PATH: /srv/datasets2/nutrition5k_dataset/dish_ids/splits/depth_test_ids.txt
+  SPLITS_TRAIN_PATH: /srv/datasets2/nutrition5k_dataset/dish_ids/splits/depth_train_ids.txt
+EVAL:
+  HEIGHT: 384
+  WIDTH: 512
+MODEL:
+  MASK_WEIGHT: 0.5
+  NAME: resnet101
+  PRETRAINED: microsoft/resnet-101
+SAVE_PATH: models/fixed/fpn_resnet101_wrot_fc3_nodrop_attninit_warmup_smaller_150ep_mltscl.pt
+TITLE:
+- fpn with aug+rotate fc 3 no dropout freeze smaller new attn initialize with warmup
+  150ep multi scale
+TRAIN:
+  BATCH_SIZE: 32
+  CKPT: null
+  FINETUNE: false
+  LAYERS: 1
+  LOSS: multi
+  LR: 5.0e-05
+  NOISE_REMOVAL_EPOCHS: 20
+  NUM_EPOCHS: 150
+  REMOVAL_WEIGHT: 0.1
+  REMOVE_RATE: 0.03
+  SEED: 12345
+  WARMUP_EPOCHS: 10
+  WEIGHT_DECAY: 0.0001
+
+[2023-06-28 03:09:14,121] Epoch 1/150

@@ -5,27 +5,27 @@ DATA:
   SPLITS_TEST_PATH: /srv/datasets2/nutrition5k_dataset/dish_ids/splits/depth_test_ids.txt
   SPLITS_TRAIN_PATH: /srv/datasets2/nutrition5k_dataset/dish_ids/splits/depth_train_ids.txt
 EVAL:
-  HEIGHT: 384
-  WIDTH: 512
+  HEIGHT: 480
+  WIDTH: 640
 MODEL:
   MASK_WEIGHT: 0.5
-  NAME: resnet101
-  PRETRAINED: microsoft/resnet-101
-SAVE_PATH: models/fixed/fpn_resnet101_wrot_fc3_nodrop_attninit_warmup_smaller_150ep_mltscl.pt
+  NAME: openseed
+  PRETRAINED: ''
+SAVE_PATH: models/test/test2.pt
 TITLE:
-- fpn with aug+rotate fc 3 no dropout freeze smaller new attn initialize with warmup
-  150ep multi scale
+- test2
 TRAIN:
-  BATCH_SIZE: 32
+  BATCH_SIZE: 16
   CKPT: null
   FINETUNE: false
   LAYERS: 1
   LOSS: multi
   LR: 5.0e-05
   NOISE_REMOVAL_EPOCHS: 20
-  NUM_EPOCHS: 150
+  NUM_EPOCHS: 30
   REMOVAL_WEIGHT: 0.1
   REMOVE_RATE: 0.03
   SEED: 12345
+  TRAINER: noisy
   WARMUP_EPOCHS: 10
   WEIGHT_DECAY: 0.0001
