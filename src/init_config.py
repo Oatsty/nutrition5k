@@ -36,6 +36,10 @@ _C.MODEL.MASK_WEIGHT = 0.5
 _C.TRAIN = CN()
 _C.TRAIN.LOSS = 'multi'
 _C.TRAIN.BATCH_SIZE = 128
+_C.TRAIN.WARMUP_EPOCHS = 10
+_C.TRAIN.NOISE_REMOVAL_EPOCHS = 20
+_C.TRAIN.REMOVE_RATE = 0.03
+_C.TRAIN.REMOVAL_WEIGHT = 0.1
 _C.TRAIN.LR = 0.01
 _C.TRAIN.NUM_EPOCHS = 20
 _C.TRAIN.WEIGHT_DECAY = 1e-4
@@ -108,6 +112,14 @@ def update_config(config, args):
         config.TRAIN.LR = args.lr
     if _check_args('num_epochs'):
         config.TRAIN.NUM_EPOCHS = args.num_epochs
+    if _check_args('warmup_epochs'):
+        config.TRAIN.WARGMUP_EPOCHS = args.warmup_epochs
+    if _check_args('noise_removal_epochs'):
+        config.TRAIN.NOISE_REMOVAL_EPOCHS = args.noise_removal_epochs
+    if _check_args('remove_rate'):
+        config.TRAIN.REMOVE_RATE = args.remove_rate
+    if _check_args('removal_weight'):
+        config.TRAIN.REMOVAL_WEIGHT = args.removal_weight
     if _check_args('weight_decay'):
         config.TRAIN.WEIGHT_DECAY = args.weight_decay
     if _check_args('ckpt'):
@@ -169,6 +181,10 @@ def get_parser() -> argparse.ArgumentParser:
     parser.add_argument('--batch-size', type=int)
     parser.add_argument('--lr', type=float)
     parser.add_argument('--num-epochs', type=int)
+    parser.add_argument('--warmup-epochs', type=int)
+    parser.add_argument('--noise-removal-epochs', type=int)
+    parser.add_argument('--remove-rate', type=float)
+    parser.add_argument('--removal-weight', type=float)
     parser.add_argument('--weight-decay', type=float)
     parser.add_argument('--ckpt', type=str)
     parser.add_argument('--finetune', action='store_true')

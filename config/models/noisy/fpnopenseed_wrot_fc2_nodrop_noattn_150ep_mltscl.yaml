@@ -11,10 +11,9 @@ MODEL:
   MASK_WEIGHT: 0.5
   NAME: openseed
   PRETRAINED: ''
-SAVE_PATH: models/fixed/fpnopenseed_wrot_fc3_nodrop_attninit_warmup_150ep_mltscl.pt
+SAVE_PATH: models/noisy/fpnopenseed_wrot_fc2_nodrop_noattn_150ep_mltscl.pt
 TITLE:
-- fpn openseed with aug+rotate fc 3 no dropout freeze new attn initialize with warmup
-  150ep multi scale
+- fpn openseed with aug+rotate fc 2 no dropout freeze no attention 150ep multi scale
 TRAIN:
   BATCH_SIZE: 32
   CKPT: null

@@ -1,18 +1,19 @@
-from typing import Callable
+from typing import Any, Callable, Optional, TypedDict
+from typing_extensions import Unpack, TypeVarTuple
 import torch
 from torch import nn
 import torch.nn.functional as F
 from yacs.config import CfgNode as CN
 
-from dataset.nutrition5k_dataset import Ingr, Metadata
+from dataset import Ingr, Metadata
 
 num_ingrs = 555
 
-def loss_func_multi(outputs: dict[str,torch.Tensor], metadata: list[Metadata], criterion: nn.Module, device: torch.device) -> dict[str, torch.Tensor]:
+def loss_func_multi(outputs: dict[str,torch.Tensor], metadata: list[Metadata], device: torch.device, **kwargs) -> dict[str, torch.Tensor]:
     loss_multi = {x: torch.tensor(0.) for x in ['cal','mass','fat','carb','protein']}
     for key in loss_multi.keys():
         target = torch.tensor([met.__getattribute__(key) for met in metadata]).to(device)
-        loss_multi[key] = criterion(outputs[key].squeeze(), target)
+        loss_multi[key] = nn.L1Loss(**kwargs)(outputs[key].squeeze(), target)
     return loss_multi
 
 def ingr_id_to_int(ingr_id: str) -> int:
@@ -32,17 +33,32 @@ def met_to_ingr_tensor(metadata: list[Metadata], device: torch.device) -> torch.
     target_ingrs = torch.stack([ingrs_to_tensor(ingrs,device) for ingrs in ingrs_list])
     return target_ingrs
 
-def loss_func_multi_ingr(outputs: dict[str,torch.Tensor], metadata: list[Metadata], criterion: nn.Module, device: torch.device) -> dict[str, torch.Tensor]:
-    loss_multi = loss_func_multi(outputs,metadata,criterion,device)
+def loss_func_multi_ingr(outputs: dict[str,torch.Tensor], metadata: list[Metadata], device: torch.device, **kwargs) -> dict[str, torch.Tensor]:
+    loss_multi = loss_func_multi(outputs,metadata,device,**kwargs)
     target_ingrs = met_to_ingr_tensor(metadata,device)
     loss_multi['ingrs'] = nn.CrossEntropyLoss()(outputs['ingrs'],target_ingrs) / 6.31 # ln(555)
     return loss_multi
 
-def get_loss(config: CN) -> Callable:
+def get_loss(config: CN) -> Callable[..., dict[str, torch.Tensor]]:
     loss = config.TRAIN.LOSS
     if loss == 'multi':
         return loss_func_multi
     elif loss == 'multi_ingrs':
         return loss_func_multi_ingr
     else:
-        exit(1)
+        raise ValueError(f'Invalid loss function: {loss}')
+
+def get_candidate(outputs: dict[str,torch.Tensor], metadata: list[Metadata], loss_multi: dict[str, torch.Tensor], k: int = 3, weight: float = 0.1) -> dict[str, tuple[Metadata,float]]:
+    outputs_cands: dict[str, tuple[Metadata,float]] = {}
+    individual_losses = torch.stack(list(loss_multi.values())).sum(0)
+    assert len(individual_losses) == len(outputs['cal'])
+    cand_ids = individual_losses.argsort(descending=True)[:k]
+    for id in cand_ids:
+        dish_id = metadata[id].dish_id
+        ingrs = metadata[id].ingrs
+        loss = individual_losses[id].item()
+        new_metadata_dict = {}
+        for key, pred_val in outputs.items():
+            new_metadata_dict[key] = pred_val * weight + metadata[id].__getattribute__(key) * (1-weight)
+        outputs_cands[dish_id] = (Metadata(dish_id=dish_id,ingrs=ingrs,**{k: v[id].item() for k, v in outputs.items()}), loss)
+    return outputs_cands

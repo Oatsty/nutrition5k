@@ -5,15 +5,15 @@ DATA:
   SPLITS_TEST_PATH: /srv/datasets2/nutrition5k_dataset/dish_ids/splits/depth_test_ids.txt
   SPLITS_TRAIN_PATH: /srv/datasets2/nutrition5k_dataset/dish_ids/splits/depth_train_ids.txt
 EVAL:
-  HEIGHT: 384
-  WIDTH: 512
+  HEIGHT: 480
+  WIDTH: 640
 MODEL:
   MASK_WEIGHT: 0.5
   NAME: openseed
   PRETRAINED: ''
-SAVE_PATH: models/fixed/fpnopenseed_wrot_fc3_nodrop_attninit_warmup_150ep_mltscl.pt
+SAVE_PATH: models/noisy/fpnopenseed_wrot_wrem_fc2-3_nodrop_autoattn_150ep_mltscl.pt
 TITLE:
-- fpn openseed with aug+rotate fc 3 no dropout freeze new attn initialize with warmup
+- fpn openseed with aug+rotate weighted removal fc 2-3 no dropout freeze auto attention
   150ep multi scale
 TRAIN:
   BATCH_SIZE: 32
@@ -22,6 +22,10 @@ TRAIN:
   LAYERS: 1
   LOSS: multi
   LR: 5.0e-05
+  NOISE_REMOVAL_EPOCHS: 10
   NUM_EPOCHS: 150
+  REMOVAL_WEIGHT: 0.3
+  REMOVE_RATE: 0.1
   SEED: 12345
+  WARMUP_EPOCHS: 10
   WEIGHT_DECAY: 0.0001

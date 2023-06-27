@@ -14,27 +14,29 @@ class Regressor(nn.Module):
         super(Regressor, self).__init__()
         self.fc1 = nn.Sequential(
             nn.Linear(in_dim, hidden_dim),
-            # nn.BatchNorm1d(hidden_dim),
             nn.ReLU(),
-            # nn.Dropout(0.1),
-            # nn.Linear(hidden_dim, hidden_dim),
-            # # nn.BatchNorm1d(hidden_dim),
-            # nn.ReLU(),
-            # nn.Dropout(0.3),
         )
-        self.regress = nn.ModuleDict({
+        self.regress1 = nn.ModuleDict({
+            x: nn.Sequential(
+                nn.Linear(hidden_dim,1),
+            ) for x in ['cal','mass','fat','carb','protein']
+        })
+        self.regress2 = nn.ModuleDict({
             x: nn.Sequential(
                 nn.Linear(hidden_dim,hidden_dim),
-                # nn.BatchNorm1d(hidden_dim),
                 nn.ReLU(),
-                # nn.Dropout(0.1),
                 nn.Linear(hidden_dim,1),
             ) for x in ['cal','mass','fat','carb','protein']
         })
 
-    def forward(self, x):
+    def forward(self, x, depth=3):
         x = self.fc1(x)
-        out = {d: self.regress[d](x) for d in ['cal','mass','fat','carb','protein']}
+        if depth == 2:
+            out = {d: self.regress1[d](x) for d in ['cal','mass','fat','carb','protein']}
+        elif depth ==3:
+            out = {d: self.regress2[d](x) for d in ['cal','mass','fat','carb','protein']}
+        else:
+            raise ValueError(f'Invalid depth: {depth}')
         return out  
     
 class RegressorIngrs(nn.Module):
@@ -110,7 +112,7 @@ class SimpleInceptionV2(nn.Module):
         self.flatten = nn.Flatten()
         self.regressor = regressor
 
-    def forward(self, img, depth):
+    def forward(self, img, depth, **kwargs):
         x = torch.cat([img,depth],dim=1)
         x = self.conv0(x)
         x = self.backbone(x)[-1]
@@ -134,7 +136,7 @@ class FPN(nn.Module):
             if isinstance(module, nn.Linear):
                 module.weight.data *= 0.67
 
-    def forward(self, rgb_img: torch.Tensor, depth_img: torch.Tensor):
+    def forward(self, rgb_img: torch.Tensor, depth_img: torch.Tensor, skip_attn: bool = False):
         B, _, _, _ = rgb_img.shape
         depth_img = depth_img.expand(-1,3,-1,-1)
         inputs = {'rgb_img': rgb_img, 'depth_img': depth_img}
@@ -153,11 +155,12 @@ class FPN(nn.Module):
             else:
                 hidden_states[i] = f.interpolate(hid,fin_res)
         hidden_states = torch.stack([emb for emb in hidden_states.values()])
-        pooled_hidden = hidden_states.mean(0)
-        pooled_hidden = rearrange(pooled_hidden, 'b c h w -> b (h w) c', h=fin_res)
-        pooled_hidden = self.attention(pooled_hidden)
-        pooled_hidden = rearrange(pooled_hidden, 'b (h w) c -> b c h w', h=fin_res)
-        hidden_states = hidden_states + pooled_hidden.unsqueeze(0)
+        if not skip_attn:
+            pooled_hidden = hidden_states.mean(0)
+            pooled_hidden = rearrange(pooled_hidden, 'b c h w -> b (h w) c', h=fin_res)
+            pooled_hidden = self.attention(pooled_hidden)
+            pooled_hidden = rearrange(pooled_hidden, 'b (h w) c -> b c h w', h=fin_res)
+            hidden_states = hidden_states + pooled_hidden.unsqueeze(0)
         hidden_states = rearrange(hidden_states, 'n b c h w -> b (n c) h w', b=B)
         emb = self.pooling(hidden_states)
         emb = self.flatten(emb)
@@ -175,10 +178,11 @@ class FPNOpenSeeD(nn.Module):
         self.attention = SelfAttention(hidden_dim)
         self.pooling = nn.AdaptiveAvgPool2d(1)
         self.flatten = nn.Flatten()
+        self.dropout = nn.Dropout(0.1)
         self.regressor = regressor
         self.openseed_seg = OpenSeeDSeg(device)
 
-    def forward_features(self, rgb_features: dict[str,torch.Tensor], depth_features: dict[str,torch.Tensor]):
+    def forward_features(self, rgb_features: dict[str,torch.Tensor], depth_features: dict[str,torch.Tensor], skip_attn: bool = False, **kwargs):
         B, _, _, _ = rgb_features['res2'].shape
         rgb_hidden_states:  dict[str,torch.Tensor] = self.rgb_fpn(rgb_features)
         depth_hidden_states: dict[str,torch.Tensor] = self.depth_fpn(depth_features)
@@ -195,34 +199,36 @@ class FPNOpenSeeD(nn.Module):
                 depth_hidden_states[depth_key] = f.interpolate(depth_hid,(fin_res_height,fin_res_width))
             hidden_states[rgb_key] = rgb_hidden_states[rgb_key] + depth_hidden_states[depth_key]
         hidden_states = torch.stack([emb for emb in hidden_states.values()])
-        pooled_hidden = hidden_states.mean(0)
-        pooled_hidden = rearrange(pooled_hidden, 'b c h w -> b (h w) c', h=fin_res_height)
-        pooled_hidden = self.attention(pooled_hidden)
-        pooled_hidden = rearrange(pooled_hidden, 'b (h w) c -> b c h w', h=fin_res_height)
-        hidden_states = hidden_states + pooled_hidden.unsqueeze(0)
+        if not skip_attn:
+            pooled_hidden = hidden_states.mean(0)
+            pooled_hidden = rearrange(pooled_hidden, 'b c h w -> b (h w) c', h=fin_res_height)
+            pooled_hidden = self.attention(pooled_hidden)
+            pooled_hidden = rearrange(pooled_hidden, 'b (h w) c -> b c h w', h=fin_res_height)
+            hidden_states = hidden_states + pooled_hidden.unsqueeze(0)
         hidden_states = rearrange(hidden_states, 'n b c h w -> b (n c) h w', b=B)
         emb = self.pooling(hidden_states)
         emb = self.flatten(emb)
-        out = self.regressor(emb)
+        emb = self.dropout(emb)
+        out = self.regressor(emb,**kwargs)
         # for key, hid in hidden_states.items():
         #     hidden_states[key] = self.flatten(self.pooling(hid))
         # hidden_states = torch.cat([emb for emb in hidden_states.values()],dim=1)
         # out = self.regressor(hidden_states)
         return out
     
-    def forward(self, img: torch.Tensor, depth: torch.Tensor):
+    def forward(self, img: torch.Tensor, depth_img: torch.Tensor, **kwargs):
         masks, _, rgb_features = self.openseed_seg.get_mask(img)
-        depth = depth.expand(-1,3,-1,-1)
+        depth_img = depth_img.expand(-1,3,-1,-1)
         for key, feat in rgb_features.items():
             mask = f.adaptive_avg_pool2d(masks,(feat.shape[-2],feat.shape[-1])).unsqueeze(1)
             mask = torch.where(mask.bool(),mask,self.mask_weight)
             rgb_features[key] = feat * mask
-        _, _, depth_features = self.openseed_seg.get_mask(depth)
+        _, _, depth_features = self.openseed_seg.get_mask(depth_img)
         for key, feat in depth_features.items():
             mask = f.adaptive_avg_pool2d(masks,(feat.shape[-2],feat.shape[-1])).unsqueeze(1)
             mask = torch.where(mask.bool(),mask,self.mask_weight)
             depth_features[key] = feat * mask
-        out = self.forward_features(rgb_features,depth_features)
+        out = self.forward_features(rgb_features,depth_features,**kwargs)
         return out
         
 

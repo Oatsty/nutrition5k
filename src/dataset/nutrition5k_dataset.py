@@ -105,7 +105,7 @@ def make_dataset(config: Optional[CN], imgs_dir: str = '.', metadatas_path: str 
     if unnormalized_int_tensor or model_name == 'openseed':
         print('unnormalized')
         transform = transforms.Compose([transforms.PILToTensor()])
-        normalize_depth = transforms.Normalize(0,5.361)
+        normalize_depth = transforms.Normalize(3091,5.361)
     else:
         transform = None
         normalize_depth = None
