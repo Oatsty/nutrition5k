@@ -21,11 +21,12 @@ class BaseRegressor(nn.Module,ABC):
         return self.forward(x, **kwargs)
 
 class Regressor(BaseRegressor):
-    def __init__(self, in_dim, hidden_dim) -> None:
+    def __init__(self, in_dim: int, hidden_dim: int, dropout_rate: float = 0.1) -> None:
         super(Regressor, self).__init__()
         self.fc1 = nn.Sequential(
             nn.Linear(in_dim, hidden_dim),
             nn.ReLU(),
+            nn.Dropout(dropout_rate),
         )
         self.regress1 = nn.ModuleDict({
             x: nn.Sequential(
@@ -36,6 +37,7 @@ class Regressor(BaseRegressor):
             x: nn.Sequential(
                 nn.Linear(hidden_dim,hidden_dim),
                 nn.ReLU(),
+                # nn.Dropout(dropout_rate),
                 nn.Linear(hidden_dim,1),
             ) for x in ['cal','mass','fat','carb','protein']
         })
@@ -251,7 +253,7 @@ class FPNOpenSeeD(BaseModel):
         return out
     
 class FPNSwin(BaseModel):
-    def __init__(self, hidden_dim: int, pretrained_model: str = 'microsoft/swin-tiny-patch4-window7-224', regressor: BaseRegressor = Regressor(2048,2048), resolution_level: int = 2, mask_weight: float = 0.5, device='cuda') -> None:
+    def __init__(self, hidden_dim: int, pretrained_model: str = 'microsoft/swin-tiny-patch4-window7-224', regressor: BaseRegressor = Regressor(2048,2048), resolution_level: int = 2, mask_weight: float = 0.5, dropout_rate: float = 0.1,  device='cuda') -> None:
         super(FPNSwin, self).__init__()
         channel_list = [96, 192, 384, 768]
         self.resolution_level = str(resolution_level)
@@ -263,7 +265,7 @@ class FPNSwin(BaseModel):
         self.attention = SelfAttention(hidden_dim)
         self.pooling = nn.AdaptiveAvgPool2d(1)
         self.flatten = nn.Flatten()
-        self.dropout = nn.Dropout(0.1)
+        self.dropout = nn.Dropout(dropout_rate)
         self.regressor = regressor
 
     def forward(self, rgb_img: torch.Tensor, depth_img: torch.Tensor, mask: torch.Tensor, skip_attn: bool = False, **kwargs):
@@ -323,16 +325,17 @@ def get_model(config: CN, device: torch.device) -> BaseModel:
     layers = config.TRAIN.LAYERS
     finetune = config.TRAIN.FINETUNE
     mask_weight = config.MODEL.MASK_WEIGHT
+    dropout_rate = config.MODEL.DROPOUT_RATE
     if mod == 'inceptionv2':
-        model = SimpleInceptionV2(4096, pretrained_model, regressor = Regressor(6144,4096))
+        model = SimpleInceptionV2(4096, pretrained_model, regressor = Regressor(6144,4096,dropout_rate=dropout_rate))
     elif mod == 'resnet50':
-        model = FPN(512,pretrained_model, regressor = Regressor(2048,2048))
+        model = FPN(512,pretrained_model, regressor = Regressor(2048,2048,dropout_rate=dropout_rate))
     elif mod == 'resnet101':
-        model = FPN(512,pretrained_model, regressor = Regressor(2048,2048))
+        model = FPN(512,pretrained_model, regressor = Regressor(2048,2048,dropout_rate=dropout_rate))
     elif mod == 'swin':
-        model = FPNSwin(512,pretrained_model, regressor = Regressor(2048,2048), mask_weight=mask_weight)
+        model = FPNSwin(512,pretrained_model, regressor = Regressor(2048,2048,dropout_rate=dropout_rate), mask_weight=mask_weight, dropout_rate=dropout_rate)
     elif mod == 'openseed':
-        model = FPNOpenSeeD(512, regressor = Regressor(2048,2048), mask_weight=mask_weight)
+        model = FPNOpenSeeD(512, regressor = Regressor(2048,2048,dropout_rate=dropout_rate), mask_weight=mask_weight)
     elif mod == 'resnet50-ingrs':
         model = FPN(512,pretrained_model, regressor = RegressorIngrs(2048,2048))
     elif mod == 'resnet101-ingrs':

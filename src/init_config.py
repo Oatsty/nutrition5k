@@ -29,6 +29,7 @@ _C.MODEL = CN()
 _C.MODEL.NAME = 'inceptionv2'
 _C.MODEL.PRETRAINED = 'inception_resnet_v2'
 _C.MODEL.MASK_WEIGHT = 0.5
+_C.MODEL.DROPOUT_RATE = 0.1
 
 # -----------------------------------------------------------------------------
 # train
@@ -105,6 +106,8 @@ def update_config(config, args):
         config.MODEL.PRETRAINED = args.pretrained_model
     if _check_args('mask_weight'):
         config.MODEL.MASK_WEIGHT = args.mask_weight
+    if _check_args('dropout_rate'):
+        config.MODEL.DROPOUT_RATE = args.dropout_rate
     if _check_args('train_loss'):
         config.TRAIN.LOSS = args.train_loss
     if _check_args('batch_size'):
@@ -180,6 +183,7 @@ def get_parser() -> argparse.ArgumentParser:
     parser.add_argument('--model-name', type=str)
     parser.add_argument('--pretrained-model', type=str)
     parser.add_argument('--mask-weight', type=float)
+    parser.add_argument('--dropout-rate', type=float)
     parser.add_argument('--train-loss', type=str)
     parser.add_argument('--batch-size', type=int)
     parser.add_argument('--lr', type=float)

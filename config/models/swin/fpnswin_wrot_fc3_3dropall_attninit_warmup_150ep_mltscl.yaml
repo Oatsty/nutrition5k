@@ -8,13 +8,13 @@ EVAL:
   HEIGHT: 480
   WIDTH: 640
 MODEL:
-  DROPOUT_RATE: 0.1
   MASK_WEIGHT: 0.5
   NAME: swin
   PRETRAINED: microsoft/swin-tiny-patch4-window7-224
-SAVE_PATH: models/swin/fpnswin_wrot_fc3_1drop2_attninit_warmup_150ep_mltscl.pt
+SAVE_PATH: models/swin/fpnswin_wrot_fc3_3dropall_attninit_warmup_150ep_mltscl.pt
 TITLE:
-- fpn openseed swin with aug+rotate fc 0.1 dropout 2 layers new attn initialize with warmup 150ep multi scale
+- fpn openseed swin with aug+rotate fc 3 dropout 0.3 in all layers new attn initialize
+  with warmup 150ep multi scale
 TRAIN:
   BATCH_SIZE: 16
   CKPT: null
