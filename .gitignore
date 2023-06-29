@@ -6,3 +6,7 @@ __pycache__
 /pretrained_xdecoder
 /metadata
 /splits
+.vscode
+.venv
+.mypy_cache
+poetry.lock
