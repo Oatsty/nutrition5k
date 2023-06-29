@@ -9,4 +9,3 @@ __pycache__
 .vscode
 .venv
 .mypy_cache
-poetry.lock

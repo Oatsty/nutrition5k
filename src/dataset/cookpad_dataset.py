@@ -107,7 +107,7 @@ def make_dataset(
     ]
     splits_test = [line.rstrip() for line in open(splits_test_path_p, "r").readlines()]
 
-    model_name = config.MODEL.NAME if config != None else ""
+    model_name = config.MODEL.NAME if config is not None else ""
 
     if unnormalized_int_tensor or model_name == "openseed":
         print("unnormalized")

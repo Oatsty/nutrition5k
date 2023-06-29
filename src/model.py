@@ -7,12 +7,7 @@ from einops import rearrange
 from seg_openseed import OpenSeeDSeg
 from torch import nn
 from torchvision.ops import FeaturePyramidNetwork
-from transformers import (  # type: ignore
-    AutoFeatureExtractor,
-    ResNetModel,
-    SwinModel,
-    ViTFeatureExtractor,
-)
+from transformers import ResNetModel, SwinModel  # type: ignore
 from yacs.config import CfgNode as CN
 
 
@@ -452,8 +447,8 @@ class FPNSwin(BaseModel):
 def get_model(config: CN, device: torch.device) -> BaseModel:
     mod = config.MODEL.NAME
     pretrained_model = config.MODEL.PRETRAINED
-    layers = config.TRAIN.LAYERS
-    finetune = config.TRAIN.FINETUNE
+    # layers = config.TRAIN.LAYERS
+    # finetune = config.TRAIN.FINETUNE
     mask_weight = config.MODEL.MASK_WEIGHT
     dropout_rate = config.MODEL.DROPOUT_RATE
     if mod == "inceptionv2":

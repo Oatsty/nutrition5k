@@ -146,7 +146,7 @@ def make_dataset(
         )
     )
 
-    model_name = config.MODEL.NAME if config != None else ""
+    model_name = config.MODEL.NAME if config is not None else ""
 
     if unnormalized_int_tensor or model_name == "openseed":
         print("unnormalized")
