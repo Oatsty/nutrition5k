@@ -60,5 +60,3 @@ python3 refcoco2json.py
 
 
 ## SCAN-Net
-
-

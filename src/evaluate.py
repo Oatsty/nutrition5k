@@ -5,23 +5,21 @@ sys.path.insert(0, "/home/parinayok/nutrition5k/OpenSeeD")
 sys.path.append("/home/parinayok/nutrition5k")
 
 import logging
-import random
-from tqdm import tqdm
 from typing import Callable
-from yacs.config import CfgNode as CN
 
-from timm.scheduler import CosineLRScheduler
+import init_config
 import torch
-from torch import nn
-from torch.utils.data import DataLoader
 import torch.optim as optim
-from torch.optim.lr_scheduler import LRScheduler
-from torchvision import transforms
-
+from custom_utils import get_loss
 from dataset import Metadata, collate_fn, make_dataset
 from model import get_model
-import init_config
-from custom_utils import get_loss
+from timm.scheduler import CosineLRScheduler
+from torch import nn
+from torch.optim.lr_scheduler import LRScheduler
+from torch.utils.data import DataLoader
+from torchvision import transforms
+from tqdm import tqdm
+from yacs.config import CfgNode as CN
 
 logger = logging.getLogger()
 

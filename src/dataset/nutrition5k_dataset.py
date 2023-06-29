@@ -1,15 +1,14 @@
 from pathlib import Path
 from typing import Any, Optional
-from PIL import Image
-import torch
-from yacs.config import CfgNode as CN
 
 import numpy as np
-
-from torchvision import transforms
+import torch
 import torchvision.transforms.functional as TF
+from PIL import Image
+from torchvision import transforms
+from yacs.config import CfgNode as CN
 
-from .base_dataset import BaseDataset, Metadata, Ingr
+from .base_dataset import BaseDataset, Ingr, Metadata
 
 
 class Nutrition5kDataset(BaseDataset):

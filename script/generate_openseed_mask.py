@@ -1,17 +1,15 @@
-from pathlib import Path
 import sys
+from pathlib import Path
 
 sys.path.insert(0, "/home/parinayok/nutrition5k/OpenSeeD")
 sys.path.append("/home/parinayok/nutrition5k")
 
-from tqdm import tqdm
-
 import torch
-from torch.utils.data import DataLoader
-
-from src.seg_openseed import OpenSeeDSeg
 from src.dataset import collate_fn
 from src.dataset.nutrition5k_dataset import make_dataset
+from src.seg_openseed import OpenSeeDSeg
+from torch.utils.data import DataLoader
+from tqdm import tqdm
 
 
 def main():

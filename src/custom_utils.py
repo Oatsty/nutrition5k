@@ -1,11 +1,11 @@
-from typing import Any, Callable, Optional, TypedDict
-from typing_extensions import Unpack, TypeVarTuple
-import torch
-from torch import nn
-import torch.nn.functional as F
-from yacs.config import CfgNode as CN
+from typing import Any, Callable
 
+import torch
+import torch.nn.functional as F
 from dataset import Ingr, Metadata
+from torch import nn
+from typing_extensions import TypeVarTuple, Unpack
+from yacs.config import CfgNode as CN
 
 num_ingrs = 555
 

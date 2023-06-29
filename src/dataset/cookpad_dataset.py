@@ -1,16 +1,15 @@
 import json
 from pathlib import Path
 from typing import Any, Optional
-from yacs.config import CfgNode as CN
 
-import pandas as pd
 import numpy as np
-
+import pandas as pd
+import torchvision.transforms.functional as TF
 from PIL import Image
 from torchvision import transforms
-import torchvision.transforms.functional as TF
+from yacs.config import CfgNode as CN
 
-from .base_dataset import BaseDataset, Metadata, Ingr
+from .base_dataset import BaseDataset, Ingr, Metadata
 
 
 class CookpadDataset(BaseDataset):

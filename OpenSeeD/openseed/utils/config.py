@@ -4,6 +4,7 @@
 import functools
 import inspect
 
+
 def configurable(init_func=None, *, from_config=None):
     """
     Decorate a function or a class's __init__ method so that it can be called
@@ -60,7 +61,9 @@ def configurable(init_func=None, *, from_config=None):
                     "Class with @configurable must have a 'from_config' classmethod."
                 ) from e
             if not inspect.ismethod(from_config_func):
-                raise TypeError("Class with @configurable must have a 'from_config' classmethod.")
+                raise TypeError(
+                    "Class with @configurable must have a 'from_config' classmethod."
+                )
 
             if _called_with_cfg(*args, **kwargs):
                 explicit_args = _get_args_from_config(from_config_func, *args, **kwargs)
@@ -91,6 +94,7 @@ def configurable(init_func=None, *, from_config=None):
 
         return wrapper
 
+
 def _called_with_cfg(*args, **kwargs):
     """
     Returns:
@@ -106,6 +110,7 @@ def _called_with_cfg(*args, **kwargs):
     # `from_config`'s first argument is forced to be "cfg".
     # So the above check covers all cases.
     return False
+
 
 def _get_args_from_config(from_config_func, *args, **kwargs):
     """
@@ -125,7 +130,9 @@ def _get_args_from_config(from_config_func, *args, **kwargs):
         param.kind in [param.VAR_POSITIONAL, param.VAR_KEYWORD]
         for param in signature.parameters.values()
     )
-    if support_var_arg:  # forward all arguments to from_config, if from_config accepts them
+    if (
+        support_var_arg
+    ):  # forward all arguments to from_config, if from_config accepts them
         ret = from_config_func(*args, **kwargs)
     else:
         # forward supported arguments to from_config

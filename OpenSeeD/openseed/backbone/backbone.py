@@ -1,6 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import torch.nn as nn
-
 from detectron2.modeling import ShapeSpec
 
 # from ..layers import ShapeSpec
@@ -26,7 +25,6 @@ class Backbone(nn.Module):
         Returns:
             dict[str->Tensor]: mapping from feature name (e.g., "res2") to tensor
         """
-        pass
 
     @property
     def size_divisibility(self) -> int:
@@ -47,7 +45,8 @@ class Backbone(nn.Module):
         # this is a backward-compatible default
         return {
             name: ShapeSpec(
-                channels=self._out_feature_channels[name], stride=self._out_feature_strides[name]
+                channels=self._out_feature_channels[name],
+                stride=self._out_feature_strides[name],
             )
             for name in self._out_features
         }

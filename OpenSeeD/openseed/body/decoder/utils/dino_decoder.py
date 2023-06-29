@@ -6,33 +6,46 @@
 # Modified from DINO https://github.com/IDEA-Research/DINO by Feng Li and Hao Zhang.
 # ------------------------------------------------------------------------
 
-from typing import Optional, List, Union
+from typing import Optional
+
 import torch
-from torch import nn, Tensor
+from torch import Tensor, nn
 from torch.cuda.amp import autocast
 
-from .utils import MLP, _get_clones, _get_activation_fn, gen_sineembed_for_position, inverse_sigmoid
 from ...encoder.ops.modules import MSDeformAttn
+from .utils import (
+    MLP,
+    _get_activation_fn,
+    _get_clones,
+    gen_sineembed_for_position,
+    inverse_sigmoid,
+)
 
 
 class TransformerDecoder(nn.Module):
-
-    def __init__(self, decoder_layer, num_layers, norm=None,
-                 return_intermediate=False,
-                 d_model=256, query_dim=4,
-                 modulate_hw_attn=True,
-                 num_feature_levels=1,
-                 deformable_decoder=True,
-                 decoder_query_perturber=None,
-                 dec_layer_number=None,  # number of queries each layer in decoder
-                 rm_dec_query_scale=True,
-                 dec_layer_share=False,
-                 dec_layer_dropout_prob=None,
-                 task_switch=None,
-                 ):
+    def __init__(
+        self,
+        decoder_layer,
+        num_layers,
+        norm=None,
+        return_intermediate=False,
+        d_model=256,
+        query_dim=4,
+        modulate_hw_attn=True,
+        num_feature_levels=1,
+        deformable_decoder=True,
+        decoder_query_perturber=None,
+        dec_layer_number=None,  # number of queries each layer in decoder
+        rm_dec_query_scale=True,
+        dec_layer_share=False,
+        dec_layer_dropout_prob=None,
+        task_switch=None,
+    ):
         super().__init__()
         if num_layers > 0:
-            self.layers = _get_clones(decoder_layer, num_layers, layer_share=dec_layer_share)
+            self.layers = _get_clones(
+                decoder_layer, num_layers, layer_share=dec_layer_share
+            )
         else:
             self.layers = []
         self.num_layers = num_layers
@@ -93,20 +106,23 @@ class TransformerDecoder(nn.Module):
             if isinstance(m, MSDeformAttn):
                 m._reset_parameters()
 
-    def forward(self, tgt, memory,
-                tgt_mask: Optional[Tensor] = None,
-                memory_mask: Optional[Tensor] = None,
-                tgt_key_padding_mask: Optional[Tensor] = None,
-                memory_key_padding_mask: Optional[Tensor] = None,
-                pos: Optional[Tensor] = None,
-                refpoints_unsigmoid: Optional[Tensor] = None,  # num_queries, bs, 2
-                # for memory
-                level_start_index: Optional[Tensor] = None,  # num_levels
-                spatial_shapes: Optional[Tensor] = None,  # bs, num_levels, 2
-                valid_ratios: Optional[Tensor] = None,
-                # misc
-                extra: Optional[Tensor] = {}, # extra information
-                ):
+    def forward(
+        self,
+        tgt,
+        memory,
+        tgt_mask: Optional[Tensor] = None,
+        memory_mask: Optional[Tensor] = None,
+        tgt_key_padding_mask: Optional[Tensor] = None,
+        memory_key_padding_mask: Optional[Tensor] = None,
+        pos: Optional[Tensor] = None,
+        refpoints_unsigmoid: Optional[Tensor] = None,  # num_queries, bs, 2
+        # for memory
+        level_start_index: Optional[Tensor] = None,  # num_levels
+        spatial_shapes: Optional[Tensor] = None,  # bs, num_levels, 2
+        valid_ratios: Optional[Tensor] = None,
+        # misc
+        extra: Optional[Tensor] = {},  # extra information
+    ):
         """
         Input:
             - tgt: nq, bs, d_model
@@ -121,18 +137,32 @@ class TransformerDecoder(nn.Module):
         reference_points = refpoints_unsigmoid.sigmoid()
         ref_points = [reference_points]
 
-        if 'lang_refpoint_embed' in extra.keys() and 'grounding_tokens' in extra.keys():
-            reference_points = torch.cat((reference_points, extra['lang_refpoint_embed'].transpose(0,1).sigmoid()), dim=0)
-            output = torch.cat((output, extra['grounding_tokens']), dim=0)
+        if "lang_refpoint_embed" in extra.keys() and "grounding_tokens" in extra.keys():
+            reference_points = torch.cat(
+                (
+                    reference_points,
+                    extra["lang_refpoint_embed"].transpose(0, 1).sigmoid(),
+                ),
+                dim=0,
+            )
+            output = torch.cat((output, extra["grounding_tokens"]), dim=0)
 
-        for layer_id, layer in enumerate(self.layers):            
+        for layer_id, layer in enumerate(self.layers):
             # preprocess ref points
-            if self.training and self.decoder_query_perturber is not None and layer_id != 0:
+            if (
+                self.training
+                and self.decoder_query_perturber is not None
+                and layer_id != 0
+            ):
                 reference_points = self.decoder_query_perturber(reference_points)
 
-            reference_points_input = reference_points[:, :, None] \
-                                         * torch.cat([valid_ratios, valid_ratios], -1)[None, :]  # nq, bs, nlevel, 4
-            query_sine_embed = gen_sineembed_for_position(reference_points_input[:, :, 0, :], dim=output.shape[-1]//2) # nq, bs, 256*2
+            reference_points_input = (
+                reference_points[:, :, None]
+                * torch.cat([valid_ratios, valid_ratios], -1)[None, :]
+            )  # nq, bs, nlevel, 4
+            query_sine_embed = gen_sineembed_for_position(
+                reference_points_input[:, :, 0, :], dim=output.shape[-1] // 2
+            )  # nq, bs, 256*2
 
             raw_query_pos = self.ref_point_head(query_sine_embed)  # nq, bs, 256
             pos_scale = self.query_scale(output) if self.query_scale is not None else 1
@@ -144,26 +174,29 @@ class TransformerDecoder(nn.Module):
                 tgt_query_sine_embed=query_sine_embed,
                 tgt_key_padding_mask=tgt_key_padding_mask,
                 tgt_reference_points=reference_points_input,
-
                 memory=memory,
                 memory_key_padding_mask=memory_key_padding_mask,
                 memory_level_start_index=level_start_index,
                 memory_spatial_shapes=spatial_shapes,
                 memory_pos=pos,
-
                 self_attn_mask=tgt_mask,
                 cross_attn_mask=memory_mask,
-
                 task_switch=self.task_switch,
                 extra=extra,
             )
 
             # grounding language token reference point will not update and saved
-            if (self.task_switch is not None) and (extra is not None) and (self.task_switch['grounding']) and ('grounding_len' in extra) and extra['task']=='seg':
-                _reference_points = reference_points[-extra['grounding_len']:]
-                reference_points = reference_points[:-extra['grounding_len']]
-                _output = output[-extra['grounding_len']:]
-                output = output[:-extra['grounding_len']]
+            if (
+                (self.task_switch is not None)
+                and (extra is not None)
+                and (self.task_switch["grounding"])
+                and ("grounding_len" in extra)
+                and extra["task"] == "seg"
+            ):
+                _reference_points = reference_points[-extra["grounding_len"] :]
+                reference_points = reference_points[: -extra["grounding_len"]]
+                _output = output[-extra["grounding_len"] :]
+                output = output[: -extra["grounding_len"]]
 
             # iter update
             if self.bbox_embed is not None:
@@ -179,24 +212,35 @@ class TransformerDecoder(nn.Module):
             intermediate.append(self.norm(output))
 
             # add back grounding language token
-            if (self.task_switch is not None) and (extra is not None) and (self.task_switch['grounding']) and ('grounding_len' in extra) and extra['task']=='seg':
+            if (
+                (self.task_switch is not None)
+                and (extra is not None)
+                and (self.task_switch["grounding"])
+                and ("grounding_len" in extra)
+                and extra["task"] == "seg"
+            ):
                 reference_points = torch.cat((reference_points, _reference_points))
                 output = torch.cat((output, _output))
 
         return [
             [itm_out.transpose(0, 1) for itm_out in intermediate],
-            [itm_refpoint.transpose(0, 1) for itm_refpoint in ref_points]
+            [itm_refpoint.transpose(0, 1) for itm_refpoint in ref_points],
         ]
 
 
 class DeformableTransformerDecoderLayer(nn.Module):
-
-    def __init__(self, d_model=256, d_ffn=1024,
-                 dropout=0.1, activation="relu",
-                 n_levels=4, n_heads=8, n_points=4,
-                 use_deformable_box_attn=False,
-                 key_aware_type=None,
-                 ):
+    def __init__(
+        self,
+        d_model=256,
+        d_ffn=1024,
+        dropout=0.1,
+        activation="relu",
+        n_levels=4,
+        n_heads=8,
+        n_points=4,
+        use_deformable_box_attn=False,
+        key_aware_type=None,
+    ):
         super().__init__()
 
         # cross attention
@@ -239,29 +283,27 @@ class DeformableTransformerDecoderLayer(nn.Module):
         return tgt
 
     @autocast(enabled=False)
-    def forward(self,
-                # for tgt
-                tgt: Optional[Tensor],  # nq, bs, d_model
-                tgt_query_pos: Optional[Tensor] = None,  # pos for query. MLP(Sine(pos))
-                tgt_query_sine_embed: Optional[Tensor] = None,  # pos for query. Sine(pos)
-                tgt_key_padding_mask: Optional[Tensor] = None,
-                tgt_reference_points: Optional[Tensor] = None,  # nq, bs, 4
-
-                # for memory
-                memory: Optional[Tensor] = None,  # hw, bs, d_model
-                memory_key_padding_mask: Optional[Tensor] = None,
-                memory_level_start_index: Optional[Tensor] = None,  # num_levels
-                memory_spatial_shapes: Optional[Tensor] = None,  # bs, num_levels, 2
-                memory_pos: Optional[Tensor] = None,  # pos for memory
-
-                # sa
-                self_attn_mask: Optional[Tensor] = None,  # mask used for self-attention
-                cross_attn_mask: Optional[Tensor] = None,  # mask used for cross-attention
-
-                # misc
-                task_switch: Optional[Tensor] = {}, # extra information                
-                extra: Optional[Tensor] = {}, # extra information
-                ):
+    def forward(
+        self,
+        # for tgt
+        tgt: Optional[Tensor],  # nq, bs, d_model
+        tgt_query_pos: Optional[Tensor] = None,  # pos for query. MLP(Sine(pos))
+        tgt_query_sine_embed: Optional[Tensor] = None,  # pos for query. Sine(pos)
+        tgt_key_padding_mask: Optional[Tensor] = None,
+        tgt_reference_points: Optional[Tensor] = None,  # nq, bs, 4
+        # for memory
+        memory: Optional[Tensor] = None,  # hw, bs, d_model
+        memory_key_padding_mask: Optional[Tensor] = None,
+        memory_level_start_index: Optional[Tensor] = None,  # num_levels
+        memory_spatial_shapes: Optional[Tensor] = None,  # bs, num_levels, 2
+        memory_pos: Optional[Tensor] = None,  # pos for memory
+        # sa
+        self_attn_mask: Optional[Tensor] = None,  # mask used for self-attention
+        cross_attn_mask: Optional[Tensor] = None,  # mask used for cross-attention
+        # misc
+        task_switch: Optional[Tensor] = {},  # extra information
+        extra: Optional[Tensor] = {},  # extra information
+    ):
         """
         Input:
             - tgt/tgt_query_pos: nq, bs, d_model
@@ -275,32 +317,52 @@ class DeformableTransformerDecoderLayer(nn.Module):
             tgt = self.norm2(tgt)
 
         # exclude grounding token for cross attention
-        if (task_switch is not None) and (extra is not None) and (task_switch['grounding']) and ('grounding_len' in extra) and extra['task']=='seg':
-            _grounding_lang_tokens = tgt[-extra['grounding_len']:,]
-            _grounding_lang_pos = tgt_query_pos[-extra['grounding_len']:,]
-            _grounding_ref_points = tgt_reference_points[-extra['grounding_len']:,]
-            tgt = tgt[:-extra['grounding_len'],]
-            tgt_query_pos = tgt_query_pos[:-extra['grounding_len'],]
-            tgt_reference_points = tgt_reference_points[:-extra['grounding_len'],]
+        if (
+            (task_switch is not None)
+            and (extra is not None)
+            and (task_switch["grounding"])
+            and ("grounding_len" in extra)
+            and extra["task"] == "seg"
+        ):
+            _grounding_lang_tokens = tgt[-extra["grounding_len"] :,]
+            _grounding_lang_pos = tgt_query_pos[-extra["grounding_len"] :,]
+            _grounding_ref_points = tgt_reference_points[-extra["grounding_len"] :,]
+            tgt = tgt[: -extra["grounding_len"],]
+            tgt_query_pos = tgt_query_pos[: -extra["grounding_len"],]
+            tgt_reference_points = tgt_reference_points[: -extra["grounding_len"],]
 
         # cross attention
         if self.key_aware_type is not None:
-            if self.key_aware_type == 'mean':
+            if self.key_aware_type == "mean":
                 tgt = tgt + memory.mean(0, keepdim=True)
-            elif self.key_aware_type == 'proj_mean':
+            elif self.key_aware_type == "proj_mean":
                 tgt = tgt + self.key_aware_proj(memory).mean(0, keepdim=True)
             else:
-                raise NotImplementedError("Unknown key_aware_type: {}".format(self.key_aware_type))
-        tgt2 = self.cross_attn(self.with_pos_embed(tgt, tgt_query_pos).transpose(0, 1),
-                               tgt_reference_points.transpose(0, 1).contiguous(),
-                               memory.transpose(0, 1), memory_spatial_shapes, memory_level_start_index,
-                               memory_key_padding_mask).transpose(0, 1) # TODO: check whether add grounding lang token to cross attention is better
+                raise NotImplementedError(
+                    "Unknown key_aware_type: {}".format(self.key_aware_type)
+                )
+        tgt2 = self.cross_attn(
+            self.with_pos_embed(tgt, tgt_query_pos).transpose(0, 1),
+            tgt_reference_points.transpose(0, 1).contiguous(),
+            memory.transpose(0, 1),
+            memory_spatial_shapes,
+            memory_level_start_index,
+            memory_key_padding_mask,
+        ).transpose(
+            0, 1
+        )  # TODO: check whether add grounding lang token to cross attention is better
         tgt = tgt + self.dropout1(tgt2)
 
         # add back grounding token for self attention
-        if (task_switch is not None) and (extra is not None) and (task_switch['grounding']) and ('grounding_len' in extra) and extra['task']=='seg':
+        if (
+            (task_switch is not None)
+            and (extra is not None)
+            and (task_switch["grounding"])
+            and ("grounding_len" in extra)
+            and extra["task"] == "seg"
+        ):
             tgt = torch.cat((tgt, _grounding_lang_tokens))
 
         tgt = self.norm1(tgt)
-        tgt = self.forward_ffn(tgt) # ffn
+        tgt = self.forward_ffn(tgt)  # ffn
         return tgt

@@ -284,3 +284,37 @@ TRAIN:
 [2023-06-29 16:35:17,852] test protein loss: 14.3608
 [2023-06-29 16:35:17,853] test protein percent loss: 0.7934
 [2023-06-29 16:35:17,854] Epoch 2/30
+[2023-06-30 01:25:54,749] DATA:
+  IMGS_DIR: /srv/datasets2/nutrition5k_dataset/imagery/realsense_overhead
+  METADATAS_PATH: /srv/datasets2/nutrition5k_dataset/metadata/dish_metadata_cafe1.csv
+  NAME: nutrition5k
+  SPLITS_TEST_PATH: /srv/datasets2/nutrition5k_dataset/dish_ids/splits/depth_test_ids.txt
+  SPLITS_TRAIN_PATH: /srv/datasets2/nutrition5k_dataset/dish_ids/splits/depth_train_ids.txt
+EVAL:
+  HEIGHT: 480
+  WIDTH: 640
+MODEL:
+  DROPOUT_RATE: 0.1
+  MASK_WEIGHT: 0.5
+  NAME: resnet101
+  PRETRAINED: microsoft/resnet-101
+SAVE_PATH: models/test/test1.pt
+TITLE:
+- test1
+TRAIN:
+  BATCH_SIZE: 16
+  CKPT: null
+  FINETUNE: false
+  LAYERS: 1
+  LOSS: multi
+  LR: 5.0e-05
+  NOISE_REMOVAL_EPOCHS: 20
+  NUM_EPOCHS: 30
+  REMOVAL_WEIGHT: 0.1
+  REMOVE_RATE: 0.03
+  SEED: 12345
+  TRAINER: normal
+  WARMUP_EPOCHS: 10
+  WEIGHT_DECAY: 0.0001
+
+[2023-06-30 01:25:56,796] Epoch 1/30

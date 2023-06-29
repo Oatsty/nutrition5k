@@ -1,16 +1,16 @@
 import logging
 import random
-from tqdm import tqdm
-from yacs.config import CfgNode as CN
 
 import torch
 import torch.optim as optim
-from torchvision import transforms
-
-from .base import BaseTrainer
 from custom_utils import get_candidate
 from dataset import Metadata
 from model import BaseModel
+from torchvision import transforms
+from tqdm import tqdm
+from yacs.config import CfgNode as CN
+
+from .base import BaseTrainer
 
 logger = logging.getLogger()
 

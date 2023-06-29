@@ -1,20 +1,16 @@
-from abc import ABC, abstractclassmethod, abstractmethod, abstractstaticmethod
 import logging
-from yacs.config import CfgNode as CN
+from abc import ABC, abstractmethod
 
-from timm.scheduler import CosineLRScheduler
-import torch
-from torch.utils.data import DataLoader
-import torch.optim as optim
-from torchvision import transforms
-
-from model import BaseModel
-from custom_utils import AverageMeterDict, get_keys, get_loss
-import torch.optim as optim
-
-from dataset import Metadata, collate_fn, make_dataset
 import init_config
+import torch
+import torch.optim as optim
+from custom_utils import AverageMeterDict, get_keys, get_loss
+from dataset import Metadata, collate_fn, make_dataset
 from model import BaseModel, get_model
+from timm.scheduler import CosineLRScheduler
+from torch.utils.data import DataLoader
+from torchvision import transforms
+from yacs.config import CfgNode as CN
 
 logger = logging.getLogger()
 

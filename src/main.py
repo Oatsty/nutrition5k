@@ -6,9 +6,8 @@ sys.path.append("/home/parinayok/nutrition5k")
 
 import logging
 
-import torch
-
 import init_config
+import torch
 from model import get_model
 from train import get_trainer
 

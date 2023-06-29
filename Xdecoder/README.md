@@ -12,7 +12,7 @@ by [Xueyan Zou*](https://maureenzou.github.io/), [Zi-Yi Dou*](https://zdou0830.g
   <img src="images/teaser_new.png" width="90%" height="90%">
 </p>
 
-* **[2023.03.20]** As an aspiration of our X-Decoder, we developed OpenSeeD ([[Paper](https://arxiv.org/pdf/2303.08131.pdf)][[Code](https://github.com/IDEA-Research/OpenSeeD)]) to enable open-vocabulary segmentation and detection with a single model, Check it out! 
+* **[2023.03.20]** As an aspiration of our X-Decoder, we developed OpenSeeD ([[Paper](https://arxiv.org/pdf/2303.08131.pdf)][[Code](https://github.com/IDEA-Research/OpenSeeD)]) to enable open-vocabulary segmentation and detection with a single model, Check it out!
 * **[2023.03.14]** We release [X-GPT](https://github.com/microsoft/X-Decoder/tree/xgpt) which is an conversational version of our X-Decoder through GPT-3 langchain!
 * **[2023.03.01]** The [Segmentation in the Wild Challenge](https://eval.ai/web/challenges/challenge-page/1931/overview) had been launched and ready for submitting results!
 * **[2023.02.28]** We released the [SGinW benchmark](https://github.com/microsoft/X-Decoder/tree/seginw) for our challenge. Welcome to build your own models on the benchmark!
@@ -35,11 +35,11 @@ X-Decoder is a generalized decoding model that can generate **pixel-level segmen
 
 **It achieves:**
 
-* State-of-the-art results on open-vocabulary segmentation and referring segmentation on eight datasets; 
-* Better or competitive finetuned performance to generalist and specialist models on segmentation and VL tasks; 
+* State-of-the-art results on open-vocabulary segmentation and referring segmentation on eight datasets;
+* Better or competitive finetuned performance to generalist and specialist models on segmentation and VL tasks;
 * Friendly for efficient finetuning and flexible for novel task composition.
 
-**It supports:** 
+**It supports:**
 
 * **One suite of parameters** pretrained for Semantic/Instance/Panoptic Segmentation, Referring Segmentation, Image Captioning, and Image-Text Retrieval;
 * **One model architecture** finetuned for Semantic/Instance/Panoptic Segmentation, Referring Segmentation, Image Captioning, Image-Text Retrieval and Visual Question Answering (with an extra cls head);
@@ -96,7 +96,7 @@ python demo/demo_captioning.py evaluate --conf_files configs/xdecoder/svlp_focal
 | X-Decoder (davit-d5,Deformable) | PanoSeg |  [log](https://projects4jw.blob.core.windows.net/x-decoder/release/ade20k_finetune_davitd5_deform_32epoch_log.txt)   | 52.4 | 38.7 | 59.1 |
 
 ## Acknowledgement
-* We appreciate the contructive dicussion with [Haotian Zhang](https://haotian-zhang.github.io/) 
+* We appreciate the contructive dicussion with [Haotian Zhang](https://haotian-zhang.github.io/)
 * We build our work on top of [Mask2Former](https://github.com/facebookresearch/Mask2Former)
 * We build our demos on [HuggingFace :hugs:](https://huggingface.co/) with sponsored GPUs
 * We appreciate the discussion with Xiaoyu Xiang during rebuttal

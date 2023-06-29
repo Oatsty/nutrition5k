@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional, TypedDict
+from typing import Optional
 
 import torch
 from torch.utils.data import Dataset, default_collate

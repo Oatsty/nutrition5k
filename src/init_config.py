@@ -1,14 +1,14 @@
 import argparse
 import logging
-import random
 import os
-import yaml
-from yacs.config import CfgNode as CN
+import random
 from pathlib import Path
 from typing import Tuple
 
 import numpy as np
 import torch
+import yaml
+from yacs.config import CfgNode as CN
 
 _C = CN()
 

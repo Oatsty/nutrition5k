@@ -5,15 +5,13 @@ sys.path.append("..")
 sys.path.append("OpenSeeD")
 
 import torch
-from torch import nn
-
-from OpenSeeD.utils.arguments import load_opt_from_config_files
-
 from detectron2.data import MetadataCatalog
 from detectron2.utils.colormap import random_color
-from OpenSeeD.openseed.BaseModel import BaseModel
 from OpenSeeD.openseed import build_model
+from OpenSeeD.openseed.BaseModel import BaseModel
+from OpenSeeD.utils.arguments import load_opt_from_config_files
 from OpenSeeD.utils.distributed import init_distributed
+from torch import nn
 
 
 class OpenSeeDSeg:

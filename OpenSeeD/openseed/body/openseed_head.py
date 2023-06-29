@@ -4,18 +4,16 @@
 # ------------------------------------------------------------------------
 # Modified from Mask2Former https://github.com/facebookresearch/Mask2Former by Feng Li and Hao Zhang.
 # ------------------------------------------------------------------------------
-import logging
-from typing import Callable, Dict, List, Optional, Tuple, Union
-
-from torch import nn
+from typing import Dict
 
 from detectron2.layers import Conv2d, ShapeSpec, get_norm
 from detectron2.modeling import SEM_SEG_HEADS_REGISTRY
+from torch import nn
 
-from .registry import register_body
-from .encoder import build_encoder
-from .decoder import build_decoder
 from ..utils import configurable
+from .decoder import build_decoder
+from .encoder import build_encoder
+from .registry import register_body
 
 
 class OpenSeeDHead(nn.Module):
@@ -53,19 +51,25 @@ class OpenSeeDHead(nn.Module):
         self.num_classes = num_classes
 
     @classmethod
-    def from_config(cls, cfg, input_shape: Dict[str, ShapeSpec], lang_encoder: nn.Module, extra: dict):
-        enc_cfg = cfg['MODEL']['ENCODER']
-        dec_cfg = cfg['MODEL']['DECODER']
-        transformer_predictor_in_channels = enc_cfg['CONVS_DIM']
+    def from_config(
+        cls,
+        cfg,
+        input_shape: Dict[str, ShapeSpec],
+        lang_encoder: nn.Module,
+        extra: dict,
+    ):
+        enc_cfg = cfg["MODEL"]["ENCODER"]
+        dec_cfg = cfg["MODEL"]["DECODER"]
+        transformer_predictor_in_channels = enc_cfg["CONVS_DIM"]
 
         return {
             "input_shape": {
-                k: v for k, v in input_shape.items() if k in enc_cfg['IN_FEATURES']
+                k: v for k, v in input_shape.items() if k in enc_cfg["IN_FEATURES"]
             },
-            "ignore_value": enc_cfg['IGNORE_VALUE'],
-            "num_classes": enc_cfg.get('NUM_CLASSES', None),
+            "ignore_value": enc_cfg["IGNORE_VALUE"],
+            "num_classes": enc_cfg.get("NUM_CLASSES", None),
             "pixel_decoder": build_encoder(cfg, input_shape),
-            "loss_weight": enc_cfg['LOSS_WEIGHT'],
+            "loss_weight": enc_cfg["LOSS_WEIGHT"],
             "transformer_predictor": build_decoder(
                 cfg,
                 transformer_predictor_in_channels,
@@ -75,13 +79,51 @@ class OpenSeeDHead(nn.Module):
             ),
         }
 
-    def forward(self, features, mask=None, targets=None, target_queries=None, target_vlp=None, task='seg', extra={}):
-        return self.layers(features, mask, targets=targets, target_queries=target_queries, target_vlp=target_vlp, task=task, extra=extra)
+    def forward(
+        self,
+        features,
+        mask=None,
+        targets=None,
+        target_queries=None,
+        target_vlp=None,
+        task="seg",
+        extra={},
+    ):
+        return self.layers(
+            features,
+            mask,
+            targets=targets,
+            target_queries=target_queries,
+            target_vlp=target_vlp,
+            task=task,
+            extra=extra,
+        )
 
-    def layers(self, features, mask=None,targets=None, target_queries=None, target_vlp=None, task='seg', extra={}):
-        mask_features, transformer_encoder_features, multi_scale_features = self.pixel_decoder.forward_features(features, mask)
-        predictions = self.predictor(multi_scale_features, mask_features, mask, targets=targets,
-                                         target_queries=target_queries, target_vlp=target_vlp, task=task, extra=extra)
+    def layers(
+        self,
+        features,
+        mask=None,
+        targets=None,
+        target_queries=None,
+        target_vlp=None,
+        task="seg",
+        extra={},
+    ):
+        (
+            mask_features,
+            transformer_encoder_features,
+            multi_scale_features,
+        ) = self.pixel_decoder.forward_features(features, mask)
+        predictions = self.predictor(
+            multi_scale_features,
+            mask_features,
+            mask,
+            targets=targets,
+            target_queries=target_queries,
+            target_vlp=target_vlp,
+            task=task,
+            extra=extra,
+        )
         return predictions
 
 

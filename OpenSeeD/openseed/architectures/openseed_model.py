@@ -2,20 +2,19 @@
 from typing import Tuple
 
 import torch
+from detectron2.data import MetadataCatalog
+from detectron2.structures import BitMasks, Boxes, ImageList, Instances
+from detectron2.utils.memory import retry_if_cuda_oom
 from torch import nn
 from torch.nn import functional as F
 
-from .registry import register_model
-from ..utils import configurable, box_ops, get_class_names
-from ..backbone import build_backbone, Backbone
+from ..backbone import Backbone, build_backbone
 from ..body import build_openseed_head
-from ..modules import sem_seg_postprocess
 from ..language import build_language_encoder
+from ..modules import sem_seg_postprocess
+from ..utils import box_ops, configurable, get_class_names
+from .registry import register_model
 
-from detectron2.structures import Boxes, ImageList, Instances, BitMasks
-from detectron2.utils.memory import retry_if_cuda_oom
-from detectron2.data import MetadataCatalog
-import random
 
 class OpenSeeD(nn.Module):
     """
@@ -52,7 +51,7 @@ class OpenSeeD(nn.Module):
         coco_on=True,
         coco_mask_on=True,
         o365_on=True,
-        merge_class=False
+        merge_class=False,
     ):
         """
         Args:
@@ -92,7 +91,9 @@ class OpenSeeD(nn.Module):
             size_divisibility = self.backbone.size_divisibility
         self.size_divisibility = size_divisibility
         self.sem_seg_postprocess_before_inference = sem_seg_postprocess_before_inference
-        self.register_buffer("pixel_mean", torch.Tensor(pixel_mean).view(-1, 1, 1), False)
+        self.register_buffer(
+            "pixel_mean", torch.Tensor(pixel_mean).view(-1, 1, 1), False
+        )
         self.register_buffer("pixel_std", torch.Tensor(pixel_std).view(-1, 1, 1), False)
 
         # additional args
@@ -109,95 +110,116 @@ class OpenSeeD(nn.Module):
         self.train_class_names = dict()
         self.train_dataset_name = train_dataset_name
         self.coco_mask_on = coco_mask_on
-        self.task_switch = {'coco': coco_on, 'o365': o365_on}
+        self.task_switch = {"coco": coco_on, "o365": o365_on}
         print("self.task_switch ", self.task_switch)
         # HACK for only two datasets for seg and det
         if coco_on:
-            task = 'seg'
+            task = "seg"
             if not coco_mask_on:
-                task = 'det'
-            self.train_class_names[task] = get_class_names(train_dataset_name[0], background=background)
-            self.train_class_names[task] = [a.replace("-merged", "").replace("-other", "").replace("-stuff", "") for a
-                                             in self.train_class_names[task]]
+                task = "det"
+            self.train_class_names[task] = get_class_names(
+                train_dataset_name[0], background=background
+            )
+            self.train_class_names[task] = [
+                a.replace("-merged", "").replace("-other", "").replace("-stuff", "")
+                for a in self.train_class_names[task]
+            ]
             train_class_names = []
             for name in self.train_class_names[task]:
-                names = name.split('-')
+                names = name.split("-")
                 if len(names) > 1:
                     assert len(names) == 2
-                    train_class_names.append(names[1] + ' ' + names[0])
+                    train_class_names.append(names[1] + " " + names[0])
                 else:
                     train_class_names.append(name)
             self.train_class_names[task] = train_class_names
 
-        if o365_on and len(train_dataset_name)>1:
-            self.train_class_names['det'] = get_class_names(train_dataset_name[1], background=background)
-            self.train_class_names['det'] = [a.lower().split('/') for a in self.train_class_names['det']]
+        if o365_on and len(train_dataset_name) > 1:
+            self.train_class_names["det"] = get_class_names(
+                train_dataset_name[1], background=background
+            )
+            self.train_class_names["det"] = [
+                a.lower().split("/") for a in self.train_class_names["det"]
+            ]
 
         if not self.semantic_on:
             assert self.sem_seg_postprocess_before_inference
 
     @classmethod
     def from_config(cls, cfg):
-        enc_cfg = cfg['MODEL']['ENCODER']
-        dec_cfg = cfg['MODEL']['DECODER']
+        enc_cfg = cfg["MODEL"]["ENCODER"]
+        dec_cfg = cfg["MODEL"]["DECODER"]
 
         # update task switch
         task_switch = {}
-        task_switch.update({'bbox': dec_cfg.get('DETECTION', True), 'mask': dec_cfg.get('MASK', True)})
-        top_x_layers = {'mask': dec_cfg.get('TOP_MASK_LAYERS', 10),
-                        'box': dec_cfg.get('TOP_DETECTION_LAYERS', 10)}
+        task_switch.update(
+            {
+                "bbox": dec_cfg.get("DETECTION", True),
+                "mask": dec_cfg.get("MASK", True),
+            }
+        )
+        top_x_layers = {
+            "mask": dec_cfg.get("TOP_MASK_LAYERS", 10),
+            "box": dec_cfg.get("TOP_DETECTION_LAYERS", 10),
+        }
 
         # building criterion
         criterion = None
 
         # build model
-        extra = {'task_switch': task_switch}
+        extra = {"task_switch": task_switch}
         backbone = build_backbone(cfg)
         lang_encoder = build_language_encoder(cfg)
-        sem_seg_head = build_openseed_head(cfg, backbone.output_shape(), lang_encoder, extra=extra)
+        sem_seg_head = build_openseed_head(
+            cfg, backbone.output_shape(), lang_encoder, extra=extra
+        )
 
         return {
             "backbone": backbone,
             "sem_seg_head": sem_seg_head,
             "criterion": criterion,
-            "num_queries": dec_cfg['NUM_OBJECT_QUERIES'],
-            "object_mask_threshold": dec_cfg['TEST']['OBJECT_MASK_THRESHOLD'],
-            "overlap_threshold": dec_cfg['TEST']['OVERLAP_THRESHOLD'],
-            "metadata": MetadataCatalog.get(cfg['DATASETS']['TRAIN'][0]),
-            "size_divisibility": dec_cfg['SIZE_DIVISIBILITY'],
+            "num_queries": dec_cfg["NUM_OBJECT_QUERIES"],
+            "object_mask_threshold": dec_cfg["TEST"]["OBJECT_MASK_THRESHOLD"],
+            "overlap_threshold": dec_cfg["TEST"]["OVERLAP_THRESHOLD"],
+            "metadata": MetadataCatalog.get(cfg["DATASETS"]["TRAIN"][0]),
+            "size_divisibility": dec_cfg["SIZE_DIVISIBILITY"],
             "sem_seg_postprocess_before_inference": (
-                dec_cfg['TEST']['SEM_SEG_POSTPROCESSING_BEFORE_INFERENCE']
-                or dec_cfg['TEST']['PANOPTIC_ON']
-                or dec_cfg['TEST']['INSTANCE_ON']
+                dec_cfg["TEST"]["SEM_SEG_POSTPROCESSING_BEFORE_INFERENCE"]
+                or dec_cfg["TEST"]["PANOPTIC_ON"]
+                or dec_cfg["TEST"]["INSTANCE_ON"]
             ),
-            "pixel_mean": cfg['INPUT']['PIXEL_MEAN'],
-            "pixel_std": cfg['INPUT']['PIXEL_STD'],
+            "pixel_mean": cfg["INPUT"]["PIXEL_MEAN"],
+            "pixel_std": cfg["INPUT"]["PIXEL_STD"],
             # inference
-            "semantic_on": dec_cfg['TEST']['SEMANTIC_ON'],
-            "instance_on": dec_cfg['TEST']['INSTANCE_ON'],
-            "panoptic_on": dec_cfg['TEST']['PANOPTIC_ON'],
-            "test_topk_per_image": cfg['COCO']['TEST']['DETECTIONS_PER_IMAGE'],
+            "semantic_on": dec_cfg["TEST"]["SEMANTIC_ON"],
+            "instance_on": dec_cfg["TEST"]["INSTANCE_ON"],
+            "panoptic_on": dec_cfg["TEST"]["PANOPTIC_ON"],
+            "test_topk_per_image": cfg["COCO"]["TEST"]["DETECTIONS_PER_IMAGE"],
             "data_loader": None,
-            "focus_on_box": cfg['MODEL']['DECODER']['TEST']['TEST_FOUCUS_ON_BOX'],
-            "transform_eval": cfg['MODEL']['DECODER']['TEST']['PANO_TRANSFORM_EVAL'],
-            "pano_temp": cfg['MODEL']['DECODER']['TEST']['PANO_TEMPERATURE'],
-            "semantic_ce_loss": cfg['MODEL']['DECODER']['TEST']['SEMANTIC_ON'] and cfg['MODEL']['DECODER']['SEMANTIC_CE_LOSS'] and not cfg['MODEL']['DECODER']['TEST']['PANOPTIC_ON'],
-            "train_dataset_name": cfg['DATASETS']['TRAIN'], # HACK for only two training set
-            "background": cfg['MODEL'].get('BACKGROUND', True),
-            "coco_on": dec_cfg.get('COCO', True),
-            "coco_mask_on": dec_cfg.get('COCO_MASK', True),
-            "o365_on": dec_cfg.get('O365', True),
+            "focus_on_box": cfg["MODEL"]["DECODER"]["TEST"]["TEST_FOUCUS_ON_BOX"],
+            "transform_eval": cfg["MODEL"]["DECODER"]["TEST"]["PANO_TRANSFORM_EVAL"],
+            "pano_temp": cfg["MODEL"]["DECODER"]["TEST"]["PANO_TEMPERATURE"],
+            "semantic_ce_loss": cfg["MODEL"]["DECODER"]["TEST"]["SEMANTIC_ON"]
+            and cfg["MODEL"]["DECODER"]["SEMANTIC_CE_LOSS"]
+            and not cfg["MODEL"]["DECODER"]["TEST"]["PANOPTIC_ON"],
+            "train_dataset_name": cfg["DATASETS"][
+                "TRAIN"
+            ],  # HACK for only two training set
+            "background": cfg["MODEL"].get("BACKGROUND", True),
+            "coco_on": dec_cfg.get("COCO", True),
+            "coco_mask_on": dec_cfg.get("COCO_MASK", True),
+            "o365_on": dec_cfg.get("O365", True),
         }
 
     @property
     def device(self):
         return self.pixel_mean.device
 
-    def forward(self, batched_inputs, inference_task='seg'):
+    def forward(self, batched_inputs, inference_task="seg"):
         processed_results = self.forward_seg(batched_inputs, task=inference_task)
         return processed_results
 
-    def forward_seg(self, batched_inputs, task='seg'):
+    def forward_seg(self, batched_inputs, task="seg"):
         """
         Args:
             batched_inputs: a list, batched outputs of :class:`DatasetMapper`.
@@ -229,30 +251,31 @@ class OpenSeeD(nn.Module):
 
         features = self.backbone(images.tensor)
 
-
         outputs, _ = self.sem_seg_head(features)
         mask_cls_results = outputs["pred_logits"]
         mask_box_results = outputs["pred_boxes"]
-        if 'seg' in task:
-            if task == 'seg':
-                self.semantic_on = self.panoptic_on = self.sem_seg_postprocess_before_inference = self.instance_on = True
-            if task == 'pan_seg':
+        if "seg" in task:
+            if task == "seg":
+                self.semantic_on = (
+                    self.panoptic_on
+                ) = self.sem_seg_postprocess_before_inference = self.instance_on = True
+            if task == "pan_seg":
                 self.semantic_on = self.instance_on = False
                 self.panoptic_on = True
                 self.sem_seg_postprocess_before_inference = True
-            if task == 'inst_seg':
+            if task == "inst_seg":
                 self.semantic_on = self.panoptic_on = False
                 self.instance_on = True
                 self.sem_seg_postprocess_before_inference = True
-            if task == 'sem_pan_seg':
+            if task == "sem_pan_seg":
                 self.semantic_on = self.panoptic_on = True
                 self.instance_on = False
                 self.sem_seg_postprocess_before_inference = True
-            if task == 'inst_pan_seg':
+            if task == "inst_pan_seg":
                 self.instance_on = self.panoptic_on = True
                 self.semantic_on = False
                 self.sem_seg_postprocess_before_inference = True
-            if task == 'sem_seg':
+            if task == "sem_seg":
                 self.instance_on = self.panoptic_on = False
                 self.semantic_on = True
                 self.sem_seg_postprocess_before_inference = True
@@ -266,22 +289,38 @@ class OpenSeeD(nn.Module):
             )
 
         else:
-            self.semantic_on = self.panoptic_on = self.sem_seg_postprocess_before_inference = False
+            self.semantic_on = (
+                self.panoptic_on
+            ) = self.sem_seg_postprocess_before_inference = False
             self.instance_on = True
-            mask_pred_results = torch.zeros(mask_box_results.shape[0], mask_box_results.shape[1],2, 2).to(mask_box_results)
+            mask_pred_results = torch.zeros(
+                mask_box_results.shape[0], mask_box_results.shape[1], 2, 2
+            ).to(mask_box_results)
 
         del outputs
 
         processed_results = []
 
-        for mask_cls_result, mask_pred_result, mask_box_result, input_per_image, image_size in zip(
-            mask_cls_results, mask_pred_results, mask_box_results, batched_inputs, images.image_sizes
+        for (
+            mask_cls_result,
+            mask_pred_result,
+            mask_box_result,
+            input_per_image,
+            image_size,
+        ) in zip(
+            mask_cls_results,
+            mask_pred_results,
+            mask_box_results,
+            batched_inputs,
+            images.image_sizes,
         ):
             height = input_per_image.get("height", image_size[0])
             width = input_per_image.get("width", image_size[1])
             processed_results.append({})
-            new_size = (images.tensor.shape[-2], images.tensor.shape[-1])  # padded size (divisible to 32)
-
+            new_size = (
+                images.tensor.shape[-2],
+                images.tensor.shape[-1],
+            )  # padded size (divisible to 32)
 
             if self.sem_seg_postprocess_before_inference:
                 mask_pred_result = retry_if_cuda_oom(sem_seg_postprocess)(
@@ -291,29 +330,37 @@ class OpenSeeD(nn.Module):
 
             # semantic segmentation inference
             if self.semantic_on:
-                r = retry_if_cuda_oom(self.semantic_inference)(mask_cls_result, mask_pred_result)
+                r = retry_if_cuda_oom(self.semantic_inference)(
+                    mask_cls_result, mask_pred_result
+                )
                 if not self.sem_seg_postprocess_before_inference:
-                    r = retry_if_cuda_oom(sem_seg_postprocess)(r, image_size, height, width)
+                    r = retry_if_cuda_oom(sem_seg_postprocess)(
+                        r, image_size, height, width
+                    )
                 processed_results[-1]["sem_seg"] = r
 
             # panoptic segmentation inference
             if self.panoptic_on:
-                panoptic_r = retry_if_cuda_oom(self.panoptic_inference)(mask_cls_result, mask_pred_result)
+                panoptic_r = retry_if_cuda_oom(self.panoptic_inference)(
+                    mask_cls_result, mask_pred_result
+                )
                 processed_results[-1]["panoptic_seg"] = panoptic_r
 
             # instance segmentation inference
 
             if self.instance_on:
                 mask_box_result = mask_box_result.to(mask_pred_result)
-                height = new_size[0]/image_size[0]*height
-                width = new_size[1]/image_size[1]*width
+                height = new_size[0] / image_size[0] * height
+                width = new_size[1] / image_size[1] * width
                 mask_box_result = self.box_postprocess(mask_box_result, height, width)
 
-                instance_r = retry_if_cuda_oom(self.instance_inference)(mask_cls_result, mask_pred_result, mask_box_result)
+                instance_r = retry_if_cuda_oom(self.instance_inference)(
+                    mask_cls_result, mask_pred_result, mask_box_result
+                )
                 processed_results[-1]["instances"] = instance_r
         del mask_pred_results
-        
-        return {'results': processed_results, 'backbone_features': features}
+
+        return {"results": processed_results, "backbone_features": features}
 
     def semantic_inference(self, mask_cls, mask_pred):
         # if use cross-entropy loss in training, evaluate with softmax
@@ -342,7 +389,9 @@ class OpenSeeD(nn.Module):
         T = self.pano_temp
         scores, labels = mask_cls.sigmoid().max(-1)
         mask_pred = mask_pred.sigmoid()
-        keep = labels.ne(self.sem_seg_head.num_classes) & (scores > self.object_mask_threshold)
+        keep = labels.ne(self.sem_seg_head.num_classes) & (
+            scores > self.object_mask_threshold
+        )
         # added process
         if self.transform_eval:
             scores, labels = F.softmax(mask_cls.sigmoid() / T, dim=-1).max(-1)
@@ -366,7 +415,10 @@ class OpenSeeD(nn.Module):
             stuff_memory_list = {}
             for k in range(cur_classes.shape[0]):
                 pred_class = cur_classes[k].item()
-                isthing = pred_class in self.metadata.thing_dataset_id_to_contiguous_id.values()
+                isthing = (
+                    pred_class
+                    in self.metadata.thing_dataset_id_to_contiguous_id.values()
+                )
                 mask_area = (cur_mask_ids == k).sum().item()
                 original_area = (cur_masks[k] >= prob).sum().item()
                 mask = (cur_mask_ids == k) & (cur_masks[k] >= prob)
@@ -400,8 +452,15 @@ class OpenSeeD(nn.Module):
         # mask_pred is already processed to have the same shape as original input
         image_size = mask_pred.shape[-2:]
         scores = mask_cls.sigmoid()  # [100, 80]
-        labels = torch.arange(self.sem_seg_head.num_classes, device=self.device).unsqueeze(0).repeat(self.num_queries, 1).flatten(0, 1)
-        scores_per_image, topk_indices = scores.flatten(0, 1).topk(self.test_topk_per_image, sorted=False)  # select 100
+        labels = (
+            torch.arange(self.sem_seg_head.num_classes, device=self.device)
+            .unsqueeze(0)
+            .repeat(self.num_queries, 1)
+            .flatten(0, 1)
+        )
+        scores_per_image, topk_indices = scores.flatten(0, 1).topk(
+            self.test_topk_per_image, sorted=False
+        )  # select 100
         labels_per_image = labels[topk_indices]
         topk_indices = topk_indices // self.sem_seg_head.num_classes
         mask_pred = mask_pred[topk_indices]
@@ -410,7 +469,9 @@ class OpenSeeD(nn.Module):
             keep = torch.zeros_like(scores_per_image).bool()
             for i, lab in enumerate(labels_per_image):
                 # print(i, len(keep), lab)
-                keep[i] = lab in self.metadata.thing_dataset_id_to_contiguous_id.values()
+                keep[i] = (
+                    lab in self.metadata.thing_dataset_id_to_contiguous_id.values()
+                )
             scores_per_image = scores_per_image[keep]
             labels_per_image = labels_per_image[keep]
             mask_pred = mask_pred[keep]
@@ -427,7 +488,9 @@ class OpenSeeD(nn.Module):
 
         # calculate average mask prob
         if self.sem_seg_postprocess_before_inference:
-            mask_scores_per_image = (mask_pred.sigmoid().flatten(1) * result.pred_masks.flatten(1)).sum(1) / (result.pred_masks.flatten(1).sum(1) + 1e-6)
+            mask_scores_per_image = (
+                mask_pred.sigmoid().flatten(1) * result.pred_masks.flatten(1)
+            ).sum(1) / (result.pred_masks.flatten(1).sum(1) + 1e-6)
         else:
             mask_scores_per_image = 1.0
             # labels_per_image = labels_per_image + 1  # HACK for o365 classification
@@ -444,6 +507,7 @@ class OpenSeeD(nn.Module):
         scale_fct = scale_fct.to(out_bbox)
         boxes = boxes * scale_fct
         return boxes
+
 
 @register_model
 def get_segmentation_model(cfg, **kwargs):

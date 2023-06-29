@@ -1,16 +1,16 @@
 import logging
 import random
+
+import torch
+import torch.optim as optim
+from dataset import Metadata
+from model import BaseModel
+from timm.scheduler import CosineLRScheduler
+from torchvision import transforms
 from tqdm import tqdm
 from yacs.config import CfgNode as CN
 
-from timm.scheduler import CosineLRScheduler
-import torch
-import torch.optim as optim
-from torchvision import transforms
-
 from .base import BaseTrainer
-from dataset import Metadata
-from model import BaseModel
 
 logger = logging.getLogger()
 

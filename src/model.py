@@ -1,16 +1,20 @@
 from abc import ABC, abstractmethod
-from einops import rearrange
+
 import numpy as np
 import timm
 import torch
-from torch import nn
 import torch.nn.functional as f
-from transformers import ResNetModel, SwinModel, AutoFeatureExtractor, ViTFeatureExtractor  # type: ignore
-from torchvision.ops import FeaturePyramidNetwork
-
-from yacs.config import CfgNode as CN
-
+from einops import rearrange
 from seg_openseed import OpenSeeDSeg
+from torch import nn
+from torchvision.ops import FeaturePyramidNetwork
+from transformers import (  # type: ignore
+    AutoFeatureExtractor,
+    ResNetModel,
+    SwinModel,
+    ViTFeatureExtractor,
+)
+from yacs.config import CfgNode as CN
 
 
 class BaseRegressor(nn.Module, ABC):
@@ -123,7 +127,8 @@ class SelfAttention(nn.Module):
         k = self.to_k(x)
         v = self.to_v(x)
         q, k, v = map(
-            lambda t: rearrange(t, "b n (h d) -> b h n d", h=self.heads), [q, k, v]
+            lambda t: rearrange(t, "b n (h d) -> b h n d", h=self.heads),
+            [q, k, v],
         )
 
         dots = torch.matmul(q, k.transpose(-1, -2)) * self.scale
@@ -197,7 +202,10 @@ class FPN(BaseModel):
                 module.weight.data *= 0.67
 
     def forward(
-        self, rgb_img: torch.Tensor, depth_img: torch.Tensor, skip_attn: bool = False
+        self,
+        rgb_img: torch.Tensor,
+        depth_img: torch.Tensor,
+        skip_attn: bool = False,
     ):
         B, _, _, _ = rgb_img.shape
         depth_img = depth_img.expand(-1, 3, -1, -1)
