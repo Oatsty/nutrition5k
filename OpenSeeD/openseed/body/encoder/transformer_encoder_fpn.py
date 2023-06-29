@@ -3,22 +3,13 @@ import logging
 from typing import Callable, Dict, Optional, Union
 
 import fvcore.nn.weight_init as weight_init
-import numpy as np
-import torch
-from detectron2.layers import Conv2d, DeformConv, ShapeSpec, get_norm
+from detectron2.layers import Conv2d, ShapeSpec, get_norm
 from torch import nn
-from torch.cuda.amp import autocast
 from torch.nn import functional as F
-from torch.nn.init import constant_, normal_, uniform_, xavier_uniform_
 
 from ...modules import PositionEmbeddingSine
 from ...utils import configurable
-from ..transformer_blocks import (
-    TransformerEncoder,
-    TransformerEncoderLayer,
-    _get_activation_fn,
-    _get_clones,
-)
+from ..transformer_blocks import TransformerEncoder, TransformerEncoderLayer
 from .registry import register_encoder
 
 

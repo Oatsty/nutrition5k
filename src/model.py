@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
 
-import numpy as np
 import timm
 import torch
 import torch.nn.functional as f

@@ -9,13 +9,10 @@ from typing import Callable
 
 import init_config
 import torch
-import torch.optim as optim
 from custom_utils import get_loss
 from dataset import Metadata, collate_fn, make_dataset
 from model import get_model
-from timm.scheduler import CosineLRScheduler
 from torch import nn
-from torch.optim.lr_scheduler import LRScheduler
 from torch.utils.data import DataLoader
 from torchvision import transforms
 from tqdm import tqdm

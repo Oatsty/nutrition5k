@@ -11,7 +11,6 @@ from OpenSeeD.openseed import build_model
 from OpenSeeD.openseed.BaseModel import BaseModel
 from OpenSeeD.utils.arguments import load_opt_from_config_files
 from OpenSeeD.utils.distributed import init_distributed
-from torch import nn
 
 
 class OpenSeeDSeg:

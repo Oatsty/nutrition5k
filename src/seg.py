@@ -5,15 +5,10 @@ import sys
 sys.path.append("..")
 sys.path.append("Xdecoder")
 
-import numpy as np
 import torch
 from detectron2.data import MetadataCatalog
-from detectron2.utils.colormap import random_color
-from PIL import Image
-from torchvision import transforms
 from Xdecoder.utils.arguments import load_opt_from_config_files
 from Xdecoder.utils.distributed import init_distributed
-from Xdecoder.utils.visualizer import Visualizer
 from Xdecoder.xdecoder import build_model
 from Xdecoder.xdecoder.BaseModel import BaseModel
 

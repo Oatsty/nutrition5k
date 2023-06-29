@@ -21,8 +21,6 @@ np.random.seed(0)
 import torch
 import torch.nn.functional as F
 from detectron2.data import MetadataCatalog
-from detectron2.structures import BitMasks
-from detectron2.utils.colormap import random_color
 from torchvision import transforms
 from utils.arguments import load_opt_command
 from utils.distributed import init_distributed

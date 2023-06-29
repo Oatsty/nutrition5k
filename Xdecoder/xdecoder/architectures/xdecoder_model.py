@@ -1,17 +1,13 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 from typing import Tuple
 
-import numpy as np
 import torch
-from detectron2.data import MetadataCatalog
-from detectron2.structures import BitMasks, Boxes, BoxMode, ImageList, Instances
+from detectron2.structures import BitMasks, Boxes, ImageList, Instances
 from detectron2.utils.memory import retry_if_cuda_oom
 from nltk.stem.lancaster import LancasterStemmer
 from timm.models.layers import trunc_normal_
 from torch import nn
 from torch.nn import functional as F
-from utils.constants import COCO_PANOPTIC_CLASSES
-from utils.prompt_engineering import prompt_engineering
 
 from ..backbone import Backbone, build_backbone
 from ..body import build_xdecoder_head

@@ -4,7 +4,6 @@ import torch
 import torch.nn.functional as F
 from dataset import Ingr, Metadata
 from torch import nn
-from typing_extensions import TypeVarTuple, Unpack
 from yacs.config import CfgNode as CN
 
 num_ingrs = 555

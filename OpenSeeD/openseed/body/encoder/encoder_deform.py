@@ -13,7 +13,7 @@ from detectron2.layers import Conv2d, ShapeSpec, get_norm
 from torch import nn
 from torch.cuda.amp import autocast
 from torch.nn import functional as F
-from torch.nn.init import constant_, normal_, uniform_, xavier_uniform_
+from torch.nn.init import normal_
 from torch.utils import checkpoint
 
 from ...modules import PositionEmbeddingSine

@@ -12,7 +12,6 @@
 from __future__ import absolute_import, division, print_function
 
 import torch
-import torch.nn as nn
 from functions.ms_deform_attn_func import (
     MSDeformAttnFunction,
     ms_deform_attn_core_pytorch,

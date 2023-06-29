@@ -2,10 +2,8 @@ from pathlib import Path
 from typing import Any, Optional
 
 import numpy as np
-import torch
 import torchvision.transforms.functional as TF
 from PIL import Image
-from torch.utils.data import Dataset
 from torchvision import transforms
 from yacs.config import CfgNode as CN
 

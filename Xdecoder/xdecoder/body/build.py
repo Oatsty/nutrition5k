@@ -1,5 +1,4 @@
 from .registry import is_model, model_entrypoints
-from .xdecoder_head import *
 
 
 def build_xdecoder_head(config, *args, **kwargs):

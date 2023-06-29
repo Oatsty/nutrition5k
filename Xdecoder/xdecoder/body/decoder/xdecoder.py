@@ -11,7 +11,7 @@ import fvcore.nn.weight_init as weight_init
 import torch
 from detectron2.layers import Conv2d
 from timm.models.layers import trunc_normal_
-from torch import Tensor, nn
+from torch import nn
 from torch.nn import functional as F
 
 from ...modules import PositionEmbeddingSine

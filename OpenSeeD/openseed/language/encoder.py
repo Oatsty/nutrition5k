@@ -1,7 +1,6 @@
 import torch
 from timm.models.layers import trunc_normal_
 from torch import nn
-from torch.nn import functional as F
 from utils.prompt_engineering import get_prompt_templates, prompt_engineering
 
 from ..utils import configurable

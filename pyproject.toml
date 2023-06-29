@@ -60,7 +60,7 @@ extend-exclude = "./.venv,./node_modules,./.serverless"
 ignore = "E501,W503,T499,E402"
 
 [tool.autoflake]
-extend-exclude = "./.venv,./node_modules,./.serverless,**/__init__.py"
+extend-exclude = "./.venv,./node_modules,./.serverless"
 ignore = "E501,W503,T499,E402"
 imports = ["django", "requests", "urllib3"]
 

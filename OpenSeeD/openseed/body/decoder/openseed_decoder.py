@@ -8,10 +8,8 @@ import fvcore.nn.weight_init as weight_init
 import torch
 from detectron2.layers import Conv2d
 from detectron2.structures import BitMasks
-from detectron2.utils.registry import Registry
 from timm.models.layers import trunc_normal_
 from torch import nn
-from torch.nn import functional as F
 
 from ...utils import box_ops, configurable
 from .registry import register_decoder
