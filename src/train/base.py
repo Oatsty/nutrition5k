@@ -9,7 +9,7 @@ import torch.optim as optim
 from torchvision import transforms
 
 from model import BaseModel
-from custom_utils import get_loss
+from custom_utils import AverageMeterDict, get_keys, get_loss
 import torch.optim as optim
 
 from dataset import Metadata, collate_fn, make_dataset
@@ -27,6 +27,9 @@ class BaseTrainer(ABC):
         self.loss_func = get_loss(config)
         self.dataset = make_dataset(config)
         self.dataloader = {x: DataLoader(self.dataset[x], batch_size=self.batch_size, num_workers=8, shuffle=True if x == 'train' else False, collate_fn=collate_fn) for x in ['train','test']}
+        keys = get_keys(config)
+        keys.insert(0,'total')
+        self.avg_meter = AverageMeterDict(keys)
 
     @abstractmethod
     def init_train(self, config: CN, model: BaseModel) -> None:
@@ -41,28 +44,27 @@ class BaseTrainer(ABC):
         self.init_train(config, model)
         for epoch in range(self.num_epochs):
             print(f'lr = {self.optimizer.param_groups[0]["lr"]}')
+            logger.info(f'Epoch {epoch+1}/{self.num_epochs}')
             for phase in ['train','test']:
-                logger.info(f'Epoch {epoch+1}/{self.num_epochs}')
-                self.running_loss = 0.0
-                self.running_loss_multi = {}
-                # 訓練
+                print(phase)
+                self.avg_meter.reset()
                 if phase == 'train':
                     model.train()
                 if phase == 'test':
                     model.eval()
-                print(phase)
                 with torch.set_grad_enabled(phase == 'train'):
                     self.train_one_epoch(model,epoch,phase,device)
-                self.running_loss /= len(self.dataset[phase])
-                logger.info(f'{phase} loss: {self.running_loss:.4f}')
-                for key in self.running_loss_multi.keys():
-                    self.running_loss_multi[key] /= len(self.dataset[phase])
+                logger.info(f'{phase} loss: {self.avg_meter.get_avg("total"):.4f}')
+                for key, key_loss in self.avg_meter.iter_avg():
+                    if key == 'total':
+                        logger.info(f'{phase} {key} loss: {key_loss:.4f}')
+                        continue
                     if key == 'ingrs':
-                        logger.info(f'{key} percent loss: {self.running_loss_multi[key]:.4f}')
+                        logger.info(f'{phase} {key} percent loss: {key_loss:.4f}')
                         continue
                     mean = self.dataset[phase].mean_metadata.__getattribute__(key)
                     std = self.dataset[phase].std_metadata.__getattribute__(key)
-                    logger.info(f'{key} loss: {self.running_loss_multi[key] * std:.4f}')
-                    logger.info(f'{key} percent loss: {self.running_loss_multi[key] * std / mean:.4f}')
+                    logger.info(f'{phase} {key} loss: {key_loss * std:.4f}')
+                    logger.info(f'{phase} {key} percent loss: {key_loss * std / mean:.4f}')
             self.scheduler.step(epoch+1)
         torch.save(model.state_dict(), config.SAVE_PATH)

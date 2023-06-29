@@ -48,10 +48,5 @@ class MaskTrainer(BaseTrainer):
             if phase == 'train':
                 loss.backward()
                 self.optimizer.step()
-            # print(loss.item())
-            self.running_loss += loss.item() * len(rgb_img)
-            for key in loss_multi.keys():
-                if key in self.running_loss_multi.keys():
-                    self.running_loss_multi[key] += loss_multi[key].item() * len(rgb_img)
-                else:
-                    self.running_loss_multi[key] = loss_multi[key].item() * len(rgb_img)
+            self.avg_meter.update({'total': loss.item()},len(rgb_img))
+            self.avg_meter.update(loss_multi, len(rgb_img))

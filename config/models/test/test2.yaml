@@ -14,7 +14,7 @@ MODEL:
   PRETRAINED: ''
 SAVE_PATH: models/test/test2.pt
 TITLE:
-- test3
+- test2
 TRAIN:
   BATCH_SIZE: 16
   CKPT: null

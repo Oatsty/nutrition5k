@@ -9,6 +9,15 @@ from dataset import Ingr, Metadata
 
 num_ingrs = 555
 
+def get_keys(config: CN):
+    loss = config.TRAIN.LOSS
+    if loss == 'multi':
+        return ['cal','mass','fat','carb','protein']
+    elif loss == 'multi_ingrs':
+        return ['cal','mass','fat','carb','protein','ingrs']
+    else:
+        raise ValueError(f'Invalid loss function: {loss}')
+
 def loss_func_multi(outputs: dict[str,torch.Tensor], metadata: list[Metadata], device: torch.device, **kwargs) -> dict[str, torch.Tensor]:
     loss_multi = {x: torch.tensor(0.) for x in ['cal','mass','fat','carb','protein']}
     for key in loss_multi.keys():
@@ -62,3 +71,55 @@ def get_candidate(outputs: dict[str,torch.Tensor], metadata: list[Metadata], los
             new_metadata_dict[key] = pred_val * weight + metadata[id].__getattribute__(key) * (1-weight)
         outputs_cands[dish_id] = (Metadata(dish_id=dish_id,ingrs=ingrs,**{k: v[id].item() for k, v in outputs.items()}), loss)
     return outputs_cands
+
+class AverageMeter(object):
+    def __init__(self):
+        self.reset()
+
+    def reset(self):
+        self.val = 0
+        self.avg = 0
+        self.sum = 0
+        self.count = 0
+
+    def update(self, val, n=1):
+        self.val = val
+        self.sum += val * n
+        self.count += n
+        self.avg = self.sum / self.count
+
+class AverageMeterDict(object):
+    def __init__(self, keys):
+        self.keys = keys
+        self.average_meter_dict = {key: AverageMeter() for key in keys}
+    
+    def reset(self):
+        for key in self.keys:
+            self.average_meter_dict[key].reset()
+
+    def update(self, val: dict[str, Any], n=1):
+        for key in val.keys():
+            if key not in self.keys:
+                raise ValueError(f'{self} does not have key {key}')
+            self.average_meter_dict[key].update(val[key], n)
+    
+    def get_sum(self, key):
+        if key not in self.keys:
+            raise ValueError(f'{self} does not have key {key}')
+        return self.average_meter_dict[key].sum
+    
+    def get_avg(self, key):
+        if key not in self.keys:
+            raise ValueError(f'{self} does not have key {key}')
+        return self.average_meter_dict[key].avg
+
+    def iter_sum(self):
+        for key in self.keys:
+            yield key, self.average_meter_dict[key].sum
+
+    def iter_avg(self):
+        for key in self.keys:
+            yield key, self.average_meter_dict[key].avg
+    
+    def get_keys(self):
+        return self.average_meter_dict.keys()
