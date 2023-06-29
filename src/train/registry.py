@@ -8,10 +8,10 @@ from .train_normal import NormalTrainer
 def get_trainer(config: CN) -> BaseTrainer:
     trainer_name = config.TRAIN.TRAINER
     if trainer_name == 'normal':
-        return NormalTrainer()
+        return NormalTrainer(config)
     elif trainer_name == 'noisy':
-        return NoisyTrainer()
+        return NoisyTrainer(config)
     elif trainer_name == 'mask':
-        return MaskTrainer()
+        return MaskTrainer(config)
     else:
         raise ValueError(f'Invalid trainer name: {trainer_name}')

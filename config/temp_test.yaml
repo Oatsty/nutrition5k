@@ -9,11 +9,11 @@ EVAL:
   WIDTH: 640
 MODEL:
   MASK_WEIGHT: 0.5
-  NAME: swin
-  PRETRAINED: microsoft/swin-tiny-patch4-window7-224
-SAVE_PATH: models/test/test3.pt
+  NAME: resnet101
+  PRETRAINED: microsoft/resnet-101
+SAVE_PATH: models/test/test1.pt
 TITLE:
-- test3
+- test1
 TRAIN:
   BATCH_SIZE: 16
   CKPT: null
@@ -26,6 +26,6 @@ TRAIN:
   REMOVAL_WEIGHT: 0.1
   REMOVE_RATE: 0.03
   SEED: 12345
-  TRAINER: mask
+  TRAINER: normal
   WARMUP_EPOCHS: 10
   WEIGHT_DECAY: 0.0001

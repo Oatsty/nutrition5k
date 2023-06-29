@@ -8,6 +8,7 @@ EVAL:
   HEIGHT: 480
   WIDTH: 640
 MODEL:
+  DROPOUT_RATE: 0.1
   MASK_WEIGHT: 0.5
   NAME: resnet101
   PRETRAINED: microsoft/resnet-101
