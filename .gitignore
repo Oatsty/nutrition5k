@@ -10,7 +10,6 @@ __pycache__
 .venv
 .mypy_cache
 
-#test
 /config/models/test/
 /models/test/
-log/models/test/
+/log/models/test/

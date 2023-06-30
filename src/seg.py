@@ -16,9 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 def seg(image: torch.Tensor, device: torch.device):
-    conf_files = [
-        "/home/parinayok/nutrition5k/Xdecoder/configs/xdecoder/svlp_focalt_lang.yaml"
-    ]
+    conf_files = ["Xdecoder/configs/xdecoder/svlp_focalt_lang.yaml"]
     opt = load_opt_from_config_files(conf_files)
     opt["cont_files"] = conf_files
     opt["command"] = "evaluate"

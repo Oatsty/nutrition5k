@@ -17,6 +17,7 @@ logger = logging.getLogger()
 
 class NormalTrainer(BaseTrainer):
     def init_train(self, config: CN, model: BaseModel) -> None:
+        scheduler_warmup = config.TRAIN.SCHEDULER_WARMUP
         self.optimizer = optim.Adam(
             model.parameters(),
             lr=config.TRAIN.LR,
@@ -24,9 +25,9 @@ class NormalTrainer(BaseTrainer):
         )
         self.scheduler = CosineLRScheduler(
             self.optimizer,
-            t_initial=config.TRAIN.NUM_EPOCHS - 20,
+            t_initial=config.TRAIN.NUM_EPOCHS - scheduler_warmup,
             lr_min=1e-7,
-            warmup_t=20,
+            warmup_t=scheduler_warmup,
             warmup_prefix=True,
         )
 

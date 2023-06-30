@@ -16,9 +16,7 @@ from OpenSeeD.utils.distributed import init_distributed
 class OpenSeeDSeg:
     def __init__(self, device) -> None:
         super(OpenSeeDSeg, self).__init__()
-        conf_files = [
-            "/home/parinayok/nutrition5k/OpenSeeD/configs/openseed/openseed_swint_lang.yaml"
-        ]
+        conf_files = ["OpenSeeD/configs/openseed/openseed_swint_lang.yaml"]
         opt = load_opt_from_config_files(conf_files)
         opt["cont_files"] = conf_files
         opt["command"] = "evaluate"
