@@ -23,8 +23,7 @@ jobs:
       - name: Setup python3.10
         run: |
           conda create -n nutrition5k python=3.10
-          conda init bash
-          source $HOME/.bashrc
+          eval "$($HOME/miniconda/bin/conda shell.bash hook)"
           conda activate nutrition5k
       - name: Install Conda Packages
         run: |
