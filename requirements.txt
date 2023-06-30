@@ -1,11 +1,7 @@
-diffdist
 torchmetrics==0.6.0
 pyarrow
-cityscapesscripts
 shapely
 scikit-image
 mup
-gradio==3.13.0
-scann
 kornia==0.6.4
 mpi4py
