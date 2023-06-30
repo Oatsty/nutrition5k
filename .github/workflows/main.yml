@@ -1,0 +1,41 @@
+name: ci python-project-template
+env:
+  PROJECT_NAME: python-project-template
+on: [push]
+jobs:
+  deploy:
+    name: CI
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: [3.10]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v1
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install Poetry
+        run: |
+          curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python
+          echo "$HOME/.poetry/bin" >> $GITHUB_PATH
+      - name: Install Packages
+        run: |
+          poetry install
+      - name: Install conda Packages
+        run: |
+          curl -sSL \
+          "https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh" > \
+          "Miniconda3.sh"
+          bash Miniconda3.sh
+          export "$HOME/miniconda/bin" >> $GITHUB_PATH
+          conda update conda
+          conda install -c conda-forge requirements.txt
+      - name: Run Lint
+        run: |
+          poetry run pre-commit run --all-files
+      - name: Run Test
+        run: |
+          poetry run pytest --no-header -v
