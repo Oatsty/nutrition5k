@@ -17,12 +17,12 @@ jobs:
         uses: actions/setup-python@v1
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Install PiP
-        run: python3 -m pip install -r OpenSeeD/requirements.txt
+      - name: Install Pip
+        run: conda run python3 -m pip install -r OpenSeeD/requirements.txt
       - name: Install Conda Packages
         run: |
-          $CONDA/bin/conda update conda -y
-          $CONDA/bin/conda install -c conda-forge --file requirements.txt -y
+          conda update conda -y
+          conda install -c conda-forge --file requirements.txt -y
       - name: Install Poetry
         run: |
           curl -sSL https://install.python-poetry.org | python3 -
@@ -32,12 +32,12 @@ jobs:
           poetry install
       - name: Install Detectron2
         run: |
-          poetry run python3 -m pip install 'git+https://github.com/MaureenZOU/detectron2-xyz.git'
+          conda run python3 -m pip install 'git+https://github.com/MaureenZOU/detectron2-xyz.git'
           poetry install
       - name: Make files
         run: |
           cd OpenSeeD/openseed/body/encoder/ops
-          conda run poetry run sh make.sh
+          conda run sh make.sh
           cd -
       - name: Run Lint
         run: |
