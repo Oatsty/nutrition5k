@@ -25,10 +25,8 @@ jobs:
         run: |
           curl -sSL https://install.python-poetry.org | python3 -
           echo "$HOME/.local/bin" >> $GITHUB_PATH
-          poetry shell
       - name: Install Packages
         run: |
-          poetry config --local virtualenvs.in-project true
           poetry install
       - name: Install Detectron2
         run: |
