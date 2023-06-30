@@ -17,11 +17,6 @@ jobs:
         uses: actions/setup-python@v1
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Make files
-        run: |
-          cd OpenSeeD/openseed/body/encoder/ops
-          sh make.sh
-          cd -
       - name: Install Conda
         run: |
           curl -sSL \
@@ -36,10 +31,16 @@ jobs:
         run: |
           curl -sSL https://install.python-poetry.org | python3 -
           echo "$HOME/.local/bin" >> $GITHUB_PATH
+          poetry shell
       - name: Install Packages
         run: |
           poetry config --local virtualenvs.in-project true
           poetry install
+      - name: Make files
+        run: |
+          cd OpenSeeD/openseed/body/encoder/ops
+          sh make.sh
+          cd -
       - name: Install Detectron2
         run: |
           poetry run python3 -m pip install 'git+https://github.com/MaureenZOU/detectron2-xyz.git'
