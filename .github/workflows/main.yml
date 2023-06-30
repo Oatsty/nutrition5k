@@ -65,6 +65,10 @@ jobs:
       #   id: cuda-toolkit
       #   with:
       #     cuda: '11.8.0'
+      - name: apt-get install
+        run: |
+          apt-get update -y
+          apt-get curl
       - name: Install Conda
         run: |
           curl -sSL \
