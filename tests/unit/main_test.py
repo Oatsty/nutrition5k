@@ -1,6 +1,6 @@
 import sys
 
-sys.path.append("/home/parinayok/nutrition5k/src")
+sys.path.insert(0, "/".join([sys.path[0], "src"]))
 
 import argparse
 from unittest import mock
