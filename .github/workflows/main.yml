@@ -24,10 +24,10 @@ jobs:
           bash ~/miniconda.sh -b -p $HOME/miniconda
           eval "$($HOME/miniconda/bin/conda shell.bash hook)"
           conda init
-          conda update conda -y
+          conda update conda -y -n base
       - name: Install Conda Packages
         run: |
-          conda install -c conda-forge --file requirements.txt -y
+          conda install -c conda-forge --file requirements.txt -y -n base
       - name: Install Detectron2
         run: |
           python3 -m pip install 'git+https://github.com/MaureenZOU/detectron2-xyz.git'
