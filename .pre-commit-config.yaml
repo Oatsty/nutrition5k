@@ -10,22 +10,20 @@ repos:
       - id: autoflake
         name: autoflake
         entry: poetry run autoflake
-        args: ["--in-place"]
+        args: ["--remove-all-unused-imports","--ignore-init-module-imports","--in-place","--ignore-pass-statements"]
         language: system
-        exclude: '''
-        (
-            \.eggs
-          | \.git
-          | \.hg
-          | \.mypy_cache
-          | \.tox
-          | \.vscode
-          | \.venv
-          | /__init__\.pyi?$
-          | ^OpenSeeD/
-          | ^Xdecoder/
-        )
-        '''
+        exclude: |
+          (?x)(
+              \.eggs|
+              \.git|
+              \.hg|
+              \.mypy_cache|
+              \.tox|
+              \.vscode|
+              \.venv|
+              ^OpenSeeD/|
+              ^Xdecoder/
+          )
         types: [file, python]
       - id: isort
         name: isort
