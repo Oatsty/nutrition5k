@@ -2574,3 +2574,15 @@ TRAIN:
 [2023-06-30 09:40:30,709] train carb percent loss: 0.0569
 [2023-06-30 09:40:30,709] train protein loss: 0.9800
 [2023-06-30 09:40:30,710] train protein percent loss: 0.0541
+epoch 150
+test loss: 0.8887
+cal loss: 37.2315
+cal percent loss: 0.1460
+mass loss: 20.0862
+mass percent loss: 0.0921
+fat loss: 2.9384
+fat percent loss: 0.2314
+carb loss: 4.4140
+carb percent loss: 0.2287
+protein loss: 3.6322
+protein percent loss: 0.2007
