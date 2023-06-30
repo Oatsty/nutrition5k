@@ -31,12 +31,13 @@ jobs:
         run: |
           curl -sSL https://install.python-poetry.org | python3 -
           echo "$HOME/.local/bin" >> $GITHUB_PATH
-      - name: Install Detectron2
-        run: |
-          poetry run python3 -m pip install 'git+https://github.com/MaureenZOU/detectron2-xyz.git'
       - name: Install Packages
         run: |
           poetry config --local virtualenvs.in-project true      
+          poetry install
+      - name: Install Detectron2
+        run: |
+          poetry run python3 -m pip install 'git+https://github.com/MaureenZOU/detectron2-xyz.git'
           poetry install
       - name: Run Lint
         run: |
