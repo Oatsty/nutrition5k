@@ -33,7 +33,7 @@ jobs:
           echo "$HOME/.local/bin" >> $GITHUB_PATH
       - name: Install Packages
         run: |
-          poetry config --local virtualenvs.in-project true      
+          poetry config --local virtualenvs.in-project true
           poetry install
       - name: Install Detectron2
         run: |
@@ -45,4 +45,3 @@ jobs:
       - name: Run Test
         run: |
           poetry run pytest --no-header -v
-
