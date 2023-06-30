@@ -1,4 +1,7 @@
-from .encoder_deform import *
+import torch
+
+if torch.cuda.is_available():
+    from .encoder_deform import *
 from .registry import is_model, model_entrypoints
 from .transformer_encoder_fpn import *
 

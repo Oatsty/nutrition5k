@@ -23,13 +23,13 @@ jobs:
         run: |
           conda update conda -y
           conda install -c conda-forge --file requirements.txt -y
-      - name: Make Files
-        run: |
-          export OMPI_MCA_opal_cuda_support=true
-          export FORCE_CUDA="1"
-          cd OpenSeeD/openseed/body/encoder/ops
-          conda run sh make.sh
-          cd -
+      # - name: Make Files
+      #   run: |
+      #     export OMPI_MCA_opal_cuda_support=true
+      #     export FORCE_CUDA="1"
+      #     cd OpenSeeD/openseed/body/encoder/ops
+      #     conda run sh make.sh
+      #     cd -
       - name: Install Poetry
         run: |
           curl -sSL https://install.python-poetry.org | python3 -
