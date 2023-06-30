@@ -1,5 +1,7 @@
 import sys
 
+import torch
+
 sys.path.insert(0, "/".join([sys.path[0], "src"]))
 
 import argparse
@@ -21,6 +23,8 @@ def test1(mock_args):
     return_value=argparse.Namespace(cfg="tests/config/test2.yaml"),
 )
 def test2(mock_args):
+    if not torch.cuda.is_available():
+        return
     main()
 
 
