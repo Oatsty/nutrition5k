@@ -42,49 +42,55 @@ jobs:
         run: |
           poetry run pre-commit run --all-files
 
-  # deploy-gpu:
-  #   name: CI-GPU
-  #   runs-on: ubuntu-latest
-  #   strategy:
-  #     fail-fast: false
-  #     matrix:
-  #       python-version: ['3.10']
-  #   steps:
-  #     - name: Checkout
-  #       uses: actions/checkout@v3
-  #     - name: Set up Python ${{ matrix.python-version }}
-  #       uses: actions/setup-python@v1
-  #       with:
-  #         python-version: ${{ matrix.python-version }}
-  #     - name: Set up CUDA
-  #       uses: Jimver/cuda-toolkit@v0.2.10
-  #       id: cuda-toolkit
-  #       with:
-  #         cuda: '11.8.0'
-  #     - name: Install Pip
-  #       run: conda run python3 -m pip install -r OpenSeeD/requirements.txt
-  #     - name: Install Conda Packages
-  #       run: |
-  #         conda update conda -y
-  #         conda install -c conda-forge --file requirements.txt -y
-  #     - name: Install Detectron2
-  #       run: |
-  #         conda run python3 -m pip install 'git+https://github.com/MaureenZOU/detectron2-xyz.git'
-  #     - name: Make Files
-  #       run: |
-  #         cd OpenSeeD/openseed/body/encoder/ops
-  #         conda run sh make.sh
-  #         cd -
-  #     - name: Install Poetry
-  #       run: |
-  #         curl -sSL https://install.python-poetry.org | python3 -
-  #         echo "$HOME/.local/bin" >> $GITHUB_PATH
-  #     - name: Install Packages
-  #       run: |
-  #         poetry install
-  #     - name: Run Lint
-  #       run: |
-  #         poetry run pre-commit run --all-files
-  #     - name: Run Test
-  #       run: |
-  #         conda run poetry run pytest --no-header -v
+  deploy-gpu:
+    name: CI-GPU
+    runs-on: linux-amd64-gpu-v100-latest-1
+    container:
+      image: nvidia/cuda:11.8.0-base-ubuntu22.04
+      env:
+        NVIDIA_VISIBLE_DEVICES: 0
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.10']
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v1
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Set up CUDA
+        uses: Jimver/cuda-toolkit@v0.2.10
+        id: cuda-toolkit
+        with:
+          cuda: '11.8.0'
+      - name: Install torch
+        run: conda run python3 -m pip install torch==1.13.1 torchvision==0.14.1 --extra-index-url https://download.pytorch.org/whl/cu113
+      - name: Install Pip
+        run: conda run python3 -m pip install -r OpenSeeD/requirements.txt
+      - name: Install Conda Packages
+        run: |
+          conda update conda -y
+          conda install -c defaults -c conda-forge --file requirements.txt -y
+      - name: Install Detectron2
+        run: |
+          conda run python3 -m pip install 'git+https://github.com/MaureenZOU/detectron2-xyz.git'
+      - name: Make Files
+        run: |
+          cd OpenSeeD/openseed/body/encoder/ops
+          conda run sh make.sh
+          cd -
+      - name: Run Test
+        run: |
+          conda run pytest --no-header -v
+      - name: Install Poetry
+        run: |
+          curl -sSL https://install.python-poetry.org | python3 -
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+      - name: Install Packages
+        run: |
+          poetry install
+      - name: Run Lint
+        run: |
+          poetry run pre-commit run --all-files
