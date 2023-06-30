@@ -17,16 +17,21 @@ jobs:
         uses: actions/setup-python@v1
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Install Conda
-        run: |
-          curl -sSL \
-          "https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh" -o ~/miniconda.sh
-          bash ~/miniconda.sh -b -p $HOME/miniconda
-          eval "$($HOME/miniconda/bin/conda shell.bash hook)"
+#       - name: Install Conda
+#         run: |
+#           curl -sSL \
+#           "https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh" -o ~/miniconda.sh
+#           bash ~/miniconda.sh -b -p $HOME/miniconda
+#           eval "$($HOME/miniconda/bin/conda shell.bash hook)"
       - name: Install Conda Packages
         run: |
-          conda update conda -y
-          conda install -c conda-forge --file requirements.txt -y
+          $CONDA/bin/conda update conda -y
+          $CONDA/bin/conda install -c conda-forge --file requirements.txt -y
+      - name: Make files
+        run: |
+          cd OpenSeeD/openseed/body/encoder/ops
+          sh make.sh
+          cd -
       - name: Install Poetry
         run: |
           curl -sSL https://install.python-poetry.org | python3 -
@@ -36,11 +41,6 @@ jobs:
         run: |
           poetry config --local virtualenvs.in-project true
           poetry install
-      - name: Make files
-        run: |
-          cd OpenSeeD/openseed/body/encoder/ops
-          sh make.sh
-          cd -
       - name: Install Detectron2
         run: |
           poetry run python3 -m pip install 'git+https://github.com/MaureenZOU/detectron2-xyz.git'
