@@ -358,3 +358,6 @@ TRAIN:
 [2023-06-30 21:13:47,821] $UNUSED$ criterion.empty_weight, Ckpt Shape: torch.Size([134])
 [2023-06-30 21:13:47,821] $UNUSED$ sem_seg_head.predictor.lang_encoder.lang_encoder.positional_embedding, Ckpt Shape: torch.Size([18, 512])
 [2023-06-30 21:13:47,822] *UNMATCHED* sem_seg_head.predictor.lang_encoder.lang_encoder.positional_embedding, Model Shape: torch.Size([77, 512]) <-> Ckpt Shape: torch.Size([18, 512])
+[2023-06-30 23:48:05,574] $UNUSED$ criterion.empty_weight, Ckpt Shape: torch.Size([134])
+[2023-06-30 23:48:05,575] $UNUSED$ sem_seg_head.predictor.lang_encoder.lang_encoder.positional_embedding, Ckpt Shape: torch.Size([18, 512])
+[2023-06-30 23:48:05,575] *UNMATCHED* sem_seg_head.predictor.lang_encoder.lang_encoder.positional_embedding, Model Shape: torch.Size([77, 512]) <-> Ckpt Shape: torch.Size([18, 512])

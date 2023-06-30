@@ -24,7 +24,7 @@ jobs:
       - name: Install Conda Packages
         run: |
           conda update conda -y
-          conda install -c conda-forge --file requirements.txt -y
+          conda install -c defaults -c conda-forge --file requirements.txt -y
       - name: Install Detectron2
         run: |
           conda run python3 -m pip install 'git+https://github.com/MaureenZOU/detectron2-xyz.git'

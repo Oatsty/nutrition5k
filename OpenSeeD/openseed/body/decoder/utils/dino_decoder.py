@@ -12,7 +12,10 @@ import torch
 from torch import Tensor, nn
 from torch.cuda.amp import autocast
 
-from ...encoder.ops.modules import MSDeformAttn
+if torch.cuda.is_available():
+    from ...encoder.ops.modules import MSDeformAttn
+else:
+    from ..modules import SelfAttentionLayer as MSDeformAttn
 from .utils import (
     MLP,
     _get_activation_fn,
