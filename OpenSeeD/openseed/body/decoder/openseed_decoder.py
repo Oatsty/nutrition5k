@@ -8,8 +8,10 @@ import fvcore.nn.weight_init as weight_init
 import torch
 from detectron2.layers import Conv2d
 from detectron2.structures import BitMasks
+from detectron2.utils.registry import Registry
 from timm.models.layers import trunc_normal_
 from torch import nn
+from torch.nn import functional as F
 
 from ...utils import box_ops, configurable
 from .registry import register_decoder
@@ -327,10 +329,7 @@ class OpenSeeDDecoder(nn.Module):
             spatial_shapes, dtype=torch.long, device=src_flatten.device
         )
         level_start_index = torch.cat(
-            (
-                spatial_shapes.new_zeros((1,)),
-                spatial_shapes.prod(1).cumsum(0)[:-1],
-            )
+            (spatial_shapes.new_zeros((1,)), spatial_shapes.prod(1).cumsum(0)[:-1])
         )
         valid_ratios = torch.stack([self.get_valid_ratio(m) for m in masks], 1)
 
@@ -457,11 +456,7 @@ class OpenSeeDDecoder(nn.Module):
         if mask_dict is not None:
             predictions_mask = torch.stack(predictions_mask)
             predictions_class = torch.stack(predictions_class)
-            (
-                predictions_class,
-                out_boxes,
-                predictions_mask,
-            ) = self.dn_post_process(
+            predictions_class, out_boxes, predictions_mask = self.dn_post_process(
                 predictions_class, out_boxes, mask_dict, predictions_mask
             )
             predictions_class = list(predictions_class)

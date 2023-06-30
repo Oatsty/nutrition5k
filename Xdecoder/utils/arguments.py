@@ -56,10 +56,7 @@ def load_opt_command(args):
     )
     parser.add_argument("command", help="Command: train/evaluate/train-and-evaluate")
     parser.add_argument(
-        "--conf_files",
-        nargs="+",
-        required=True,
-        help="Path(s) to the config file(s).",
+        "--conf_files", nargs="+", required=True, help="Path(s) to the config file(s)."
     )
     parser.add_argument(
         "--user_dir",

@@ -19,6 +19,7 @@ np.random.seed(27)
 
 import torch
 from detectron2.data import MetadataCatalog
+from detectron2.data.datasets.builtin_meta import COCO_CATEGORIES
 from detectron2.utils.colormap import random_color
 from torchvision import transforms
 from utils.arguments import load_opt_command

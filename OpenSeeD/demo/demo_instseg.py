@@ -108,8 +108,7 @@ def main(args=None):
             os.makedirs(output_root)
         demo.save(
             os.path.join(
-                output_root,
-                image_pth.split("/")[-1].split(".")[0] + "_output.png",
+                output_root, image_pth.split("/")[-1].split(".")[0] + "_output.png"
             )
         )
 

@@ -31,9 +31,7 @@ class PositionEmbeddingSine(nn.Module):
     def forward(self, x, mask=None):
         if mask is None:
             mask = torch.zeros(
-                (x.size(0), x.size(2), x.size(3)),
-                device=x.device,
-                dtype=torch.bool,
+                (x.size(0), x.size(2), x.size(3)), device=x.device, dtype=torch.bool
             )
         not_mask = ~mask
         y_embed = not_mask.cumsum(1, dtype=x.dtype)

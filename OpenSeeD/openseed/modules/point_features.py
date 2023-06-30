@@ -125,10 +125,7 @@ def get_uncertain_point_coords_with_randomness(
             [
                 point_coords,
                 torch.rand(
-                    num_boxes,
-                    num_random_points,
-                    2,
-                    device=coarse_logits.device,
+                    num_boxes, num_random_points, 2, device=coarse_logits.device
                 ),
             ],
             dim=1,

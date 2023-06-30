@@ -1,13 +1,17 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 from typing import Tuple
 
+import numpy as np
 import torch
-from detectron2.structures import BitMasks, Boxes, ImageList, Instances
+from detectron2.data import MetadataCatalog
+from detectron2.structures import BitMasks, Boxes, BoxMode, ImageList, Instances
 from detectron2.utils.memory import retry_if_cuda_oom
 from nltk.stem.lancaster import LancasterStemmer
 from timm.models.layers import trunc_normal_
 from torch import nn
 from torch.nn import functional as F
+from utils.constants import COCO_PANOPTIC_CLASSES
+from utils.prompt_engineering import prompt_engineering
 
 from ..backbone import Backbone, build_backbone
 from ..body import build_xdecoder_head
@@ -391,10 +395,7 @@ class GeneralizedXdecoder(nn.Module):
             features,
             target_queries=queries_grounding,
             task="captioning_infer",
-            extra={
-                "start_token": self.start_token,
-                "captioning_mask": captioning_mask,
-            },
+            extra={"start_token": self.start_token, "captioning_mask": captioning_mask},
         )
 
         processed_results = []
@@ -451,16 +452,8 @@ class GeneralizedXdecoder(nn.Module):
         )
 
         processed_results = []
-        for (
-            mask_pred_result,
-            caption_pred_result,
-            input_per_image,
-            image_size,
-        ) in zip(
-            mask_pred_results,
-            caption_pred_results,
-            batched_inputs,
-            images.image_sizes,
+        for mask_pred_result, caption_pred_result, input_per_image, image_size in zip(
+            mask_pred_results, caption_pred_results, batched_inputs, images.image_sizes
         ):
             height = input_per_image.get("height", image_size[0])
             width = input_per_image.get("width", image_size[1])

@@ -3,13 +3,22 @@ import logging
 from typing import Callable, Dict, Optional, Union
 
 import fvcore.nn.weight_init as weight_init
-from detectron2.layers import Conv2d, ShapeSpec, get_norm
+import numpy as np
+import torch
+from detectron2.layers import Conv2d, DeformConv, ShapeSpec, get_norm
 from torch import nn
+from torch.cuda.amp import autocast
 from torch.nn import functional as F
+from torch.nn.init import constant_, normal_, uniform_, xavier_uniform_
 
 from ...modules import PositionEmbeddingSine
 from ...utils import configurable
-from ..transformer_blocks import TransformerEncoder, TransformerEncoderLayer
+from ..transformer_blocks import (
+    TransformerEncoder,
+    TransformerEncoderLayer,
+    _get_activation_fn,
+    _get_clones,
+)
 from .registry import register_encoder
 
 
@@ -163,12 +172,7 @@ class TransformerEncoderOnly(nn.Module):
         super().__init__()
 
         encoder_layer = TransformerEncoderLayer(
-            d_model,
-            nhead,
-            dim_feedforward,
-            dropout,
-            activation,
-            normalize_before,
+            d_model, nhead, dim_feedforward, dropout, activation, normalize_before
         )
         encoder_norm = nn.LayerNorm(d_model) if normalize_before else None
         self.encoder = TransformerEncoder(
@@ -315,11 +319,7 @@ class TransformerEncoderPixelDecoder(BasePixelDecoder):
                 num_cur_levels += 1
 
         mask_features = self.mask_features(y) if self.mask_on else None
-        return (
-            mask_features,
-            transformer_encoder_features,
-            multi_scale_features,
-        )
+        return mask_features, transformer_encoder_features, multi_scale_features
 
     def forward(self, features, targets=None):
         logger = logging.getLogger(__name__)

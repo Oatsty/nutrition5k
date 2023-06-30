@@ -1,17 +1,16 @@
 from typing import Optional
 
+import fvcore.nn.weight_init as weight_init
+import torch
+from detectron2.layers import Conv2d
+from timm.models.layers import trunc_normal_
 from torch import Tensor, nn
 from torch.nn import functional as F
 
 
 class SelfAttentionLayer(nn.Module):
     def __init__(
-        self,
-        d_model,
-        nhead,
-        dropout=0.0,
-        activation="relu",
-        normalize_before=False,
+        self, d_model, nhead, dropout=0.0, activation="relu", normalize_before=False
     ):
         super().__init__()
         self.self_attn = nn.MultiheadAttention(d_model, nhead, dropout=dropout)
@@ -41,11 +40,7 @@ class SelfAttentionLayer(nn.Module):
     ):
         q = k = self.with_pos_embed(tgt, query_pos)
         tgt2 = self.self_attn(
-            q,
-            k,
-            value=tgt,
-            attn_mask=tgt_mask,
-            key_padding_mask=tgt_key_padding_mask,
+            q, k, value=tgt, attn_mask=tgt_mask, key_padding_mask=tgt_key_padding_mask
         )[0]
         tgt = tgt + self.dropout(tgt2)
         tgt = self.norm(tgt)
@@ -62,11 +57,7 @@ class SelfAttentionLayer(nn.Module):
         tgt2 = self.norm(tgt)
         q = k = self.with_pos_embed(tgt2, query_pos)
         tgt2 = self.self_attn(
-            q,
-            k,
-            value=tgt2,
-            attn_mask=tgt_mask,
-            key_padding_mask=tgt_key_padding_mask,
+            q, k, value=tgt2, attn_mask=tgt_mask, key_padding_mask=tgt_key_padding_mask
         )[0]
         tgt = tgt + self.dropout(tgt2)
 
@@ -86,12 +77,7 @@ class SelfAttentionLayer(nn.Module):
 
 class CrossAttentionLayer(nn.Module):
     def __init__(
-        self,
-        d_model,
-        nhead,
-        dropout=0.0,
-        activation="relu",
-        normalize_before=False,
+        self, d_model, nhead, dropout=0.0, activation="relu", normalize_before=False
     ):
         super().__init__()
         self.multihead_attn = nn.MultiheadAttention(d_model, nhead, dropout=dropout)
@@ -164,12 +150,7 @@ class CrossAttentionLayer(nn.Module):
     ):
         if self.normalize_before:
             return self.forward_pre(
-                tgt,
-                memory,
-                memory_mask,
-                memory_key_padding_mask,
-                pos,
-                query_pos,
+                tgt, memory, memory_mask, memory_key_padding_mask, pos, query_pos
             )
         return self.forward_post(
             tgt, memory, memory_mask, memory_key_padding_mask, pos, query_pos

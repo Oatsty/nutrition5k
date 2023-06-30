@@ -131,8 +131,7 @@ class MSDeformAttn(nn.Module):
         # N, Len_q, n_heads, n_levels, n_points, 2
         if reference_points.shape[-1] == 2:
             offset_normalizer = torch.stack(
-                [input_spatial_shapes[..., 1], input_spatial_shapes[..., 0]],
-                -1,
+                [input_spatial_shapes[..., 1], input_spatial_shapes[..., 0]], -1
             )
             sampling_locations = (
                 reference_points[:, :, None, :, None, :]
@@ -164,10 +163,7 @@ class MSDeformAttn(nn.Module):
         except:
             # CPU
             output = ms_deform_attn_core_pytorch(
-                value,
-                input_spatial_shapes,
-                sampling_locations,
-                attention_weights,
+                value, input_spatial_shapes, sampling_locations, attention_weights
             )
         # # For FLOPs calculation only
         # output = ms_deform_attn_core_pytorch(value, input_spatial_shapes, sampling_locations, attention_weights)

@@ -66,11 +66,7 @@ class MSDeformAttnFunction(Function):
             sampling_locations,
             attention_weights,
         ) = ctx.saved_tensors
-        (
-            grad_value,
-            grad_sampling_loc,
-            grad_attn_weight,
-        ) = MSDA.ms_deform_attn_backward(
+        grad_value, grad_sampling_loc, grad_attn_weight = MSDA.ms_deform_attn_backward(
             value,
             value_spatial_shapes,
             value_level_start_index,
@@ -80,14 +76,7 @@ class MSDeformAttnFunction(Function):
             ctx.im2col_step,
         )
 
-        return (
-            grad_value,
-            None,
-            None,
-            grad_sampling_loc,
-            grad_attn_weight,
-            None,
-        )
+        return grad_value, None, None, grad_sampling_loc, grad_attn_weight, None
 
 
 def ms_deform_attn_core_pytorch(

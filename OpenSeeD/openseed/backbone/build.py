@@ -1,3 +1,4 @@
+from .backbone import *
 from .registry import is_model, model_entrypoints
 
 

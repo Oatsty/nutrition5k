@@ -203,10 +203,7 @@ class _PanopticPrediction:
         segment_ids, areas = torch.unique(panoptic_seg, sorted=True, return_counts=True)
         areas = areas.numpy()
         sorted_idxs = np.argsort(-areas)
-        self._seg_ids, self._seg_areas = (
-            segment_ids[sorted_idxs],
-            areas[sorted_idxs],
-        )
+        self._seg_ids, self._seg_areas = segment_ids[sorted_idxs], areas[sorted_idxs]
         self._seg_ids = self._seg_ids.tolist()
         for sid, area in zip(self._seg_ids, self._seg_areas):
             if sid in self._sinfo:
@@ -317,9 +314,7 @@ class VisImage:
         """
         img = img.astype("uint8")
         self.ax.imshow(
-            img,
-            extent=(0, self.width, self.height, 0),
-            interpolation="nearest",
+            img, extent=(0, self.width, self.height, 0), interpolation="nearest"
         )
 
     def save(self, filepath):
@@ -763,10 +758,7 @@ class Visualizer:
                 # first get a box
                 if boxes is not None:
                     x0, y0, x1, y1 = boxes[i]
-                    text_pos = (
-                        x0,
-                        y0,
-                    )  # if drawing boxes, put text on the box corner.
+                    text_pos = (x0, y0)  # if drawing boxes, put text on the box corner.
                     horiz_align = "left"
                 elif masks is not None:
                     # skip small mask without polygon
@@ -906,9 +898,7 @@ class Visualizer:
             nose_x, nose_y = visible.get("nose", (None, None))
             if nose_x is not None:
                 self.draw_line(
-                    [nose_x, mid_shoulder_x],
-                    [nose_y, mid_shoulder_y],
-                    color=_RED,
+                    [nose_x, mid_shoulder_x], [nose_y, mid_shoulder_y], color=_RED
                 )
 
             try:
@@ -920,9 +910,7 @@ class Visualizer:
             else:
                 mid_hip_x, mid_hip_y = (lh_x + rh_x) / 2, (lh_y + rh_y) / 2
                 self.draw_line(
-                    [mid_hip_x, mid_shoulder_x],
-                    [mid_hip_y, mid_shoulder_y],
-                    color=_RED,
+                    [mid_hip_x, mid_shoulder_x], [mid_hip_y, mid_shoulder_y], color=_RED
                 )
         return self.output
 
@@ -968,12 +956,7 @@ class Visualizer:
             text,
             size=font_size * self.output.scale,
             family="sans-serif",
-            bbox={
-                "facecolor": "black",
-                "alpha": 0.8,
-                "pad": 0.7,
-                "edgecolor": "none",
-            },
+            bbox={"facecolor": "black", "alpha": 0.8, "pad": 0.7, "edgecolor": "none"},
             verticalalignment="top",
             horizontalalignment=horizontal_alignment,
             color=color,
@@ -1017,12 +1000,7 @@ class Visualizer:
         return self.output
 
     def draw_rotated_box_with_label(
-        self,
-        rotated_box,
-        alpha=0.5,
-        edge_color="g",
-        line_style="-",
-        label=None,
+        self, rotated_box, alpha=0.5, edge_color="g", line_style="-", label=None
     ):
         """
         Draw a rotated box with label on its top-left corner.
@@ -1051,12 +1029,7 @@ class Visualizer:
         theta = angle * math.pi / 180.0
         c = math.cos(theta)
         s = math.sin(theta)
-        rect = [
-            (-w / 2, h / 2),
-            (-w / 2, -h / 2),
-            (w / 2, -h / 2),
-            (w / 2, h / 2),
-        ]
+        rect = [(-w / 2, h / 2), (-w / 2, -h / 2), (w / 2, -h / 2), (w / 2, h / 2)]
         # x: left->right ; y: top->down
         rotated_rect = [
             (s * yy + c * xx + cnt_x, c * yy - s * xx + cnt_y) for (xx, yy) in rect
@@ -1084,11 +1057,7 @@ class Visualizer:
                 * self._default_font_size
             )
             self.draw_text(
-                label,
-                text_pos,
-                color=label_color,
-                font_size=font_size,
-                rotation=angle,
+                label, text_pos, color=label_color, font_size=font_size, rotation=angle
             )
 
         return self.output
@@ -1369,12 +1338,9 @@ class Visualizer:
         Find proper places to draw text given a binary mask.
         """
         # TODO sometimes drawn on wrong objects. the heuristics here can improve.
-        (
-            _num_cc,
-            cc_labels,
-            stats,
-            centroids,
-        ) = cv2.connectedComponentsWithStats(binary_mask, 8)
+        _num_cc, cc_labels, stats, centroids = cv2.connectedComponentsWithStats(
+            binary_mask, 8
+        )
         if stats[1:, -1].size == 0:
             return
         largest_component_id = np.argmax(stats[1:, -1]) + 1

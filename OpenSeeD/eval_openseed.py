@@ -11,16 +11,23 @@ import os
 import sys
 import time
 
+import numpy as np
 import torch
 from datasets import build_eval_dataloader, build_evaluator
 from detectron2.data import MetadataCatalog
 from detectron2.utils.logger import log_every_n_seconds
+from mpi4py import MPI
 from openseed import build_model
 from openseed.BaseModel import BaseModel
 from openseed.utils import get_class_names
 from utils.arguments import load_opt_command
-from utils.distributed import init_distributed, is_main_process
-from utils.misc import hook_switcher
+from utils.distributed import (
+    apply_distributed,
+    init_distributed,
+    is_main_process,
+    synchronize,
+)
+from utils.misc import hook_metadata, hook_opt, hook_switcher
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)

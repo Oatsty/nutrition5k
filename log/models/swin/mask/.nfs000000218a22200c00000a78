@@ -2770,3 +2770,187 @@ TRAIN:
 [2023-06-30 09:49:36,903] test protein loss: 3.9310
 [2023-06-30 09:49:36,903] test protein percent loss: 0.2172
 [2023-06-30 09:49:36,903] Epoch 120/150
+[2023-06-30 09:52:46,880] train total loss: 0.2434
+[2023-06-30 09:52:46,880] train cal loss: 10.2684
+[2023-06-30 09:52:46,881] train cal percent loss: 0.0403
+[2023-06-30 09:52:46,881] train mass loss: 8.2184
+[2023-06-30 09:52:46,881] train mass percent loss: 0.0377
+[2023-06-30 09:52:46,881] train fat loss: 0.7232
+[2023-06-30 09:52:46,881] train fat percent loss: 0.0569
+[2023-06-30 09:52:46,881] train carb loss: 1.0604
+[2023-06-30 09:52:46,881] train carb percent loss: 0.0549
+[2023-06-30 09:52:46,881] train protein loss: 0.9080
+[2023-06-30 09:52:46,881] train protein percent loss: 0.0502
+[2023-06-30 09:53:14,318] test total loss: 0.9960
+[2023-06-30 09:53:14,319] test cal loss: 41.6869
+[2023-06-30 09:53:14,320] test cal percent loss: 0.1635
+[2023-06-30 09:53:14,320] test mass loss: 25.5877
+[2023-06-30 09:53:14,320] test mass percent loss: 0.1174
+[2023-06-30 09:53:14,320] test fat loss: 3.0791
+[2023-06-30 09:53:14,321] test fat percent loss: 0.2425
+[2023-06-30 09:53:14,321] test carb loss: 4.9264
+[2023-06-30 09:53:14,321] test carb percent loss: 0.2553
+[2023-06-30 09:53:14,321] test protein loss: 4.0334
+[2023-06-30 09:53:14,322] test protein percent loss: 0.2228
+[2023-06-30 09:53:14,322] Epoch 121/150
+[2023-06-30 09:56:23,729] train total loss: 0.2412
+[2023-06-30 09:56:23,730] train cal loss: 10.3063
+[2023-06-30 09:56:23,732] train cal percent loss: 0.0404
+[2023-06-30 09:56:23,732] train mass loss: 8.0766
+[2023-06-30 09:56:23,733] train mass percent loss: 0.0370
+[2023-06-30 09:56:23,734] train fat loss: 0.7197
+[2023-06-30 09:56:23,734] train fat percent loss: 0.0567
+[2023-06-30 09:56:23,735] train carb loss: 1.0351
+[2023-06-30 09:56:23,735] train carb percent loss: 0.0536
+[2023-06-30 09:56:23,736] train protein loss: 0.9059
+[2023-06-30 09:56:23,736] train protein percent loss: 0.0501
+[2023-06-30 09:56:50,738] test total loss: 1.0061
+[2023-06-30 09:56:50,740] test cal loss: 42.4596
+[2023-06-30 09:56:50,740] test cal percent loss: 0.1665
+[2023-06-30 09:56:50,741] test mass loss: 25.3317
+[2023-06-30 09:56:50,741] test mass percent loss: 0.1162
+[2023-06-30 09:56:50,742] test fat loss: 3.1375
+[2023-06-30 09:56:50,742] test fat percent loss: 0.2470
+[2023-06-30 09:56:50,743] test carb loss: 5.0212
+[2023-06-30 09:56:50,743] test carb percent loss: 0.2602
+[2023-06-30 09:56:50,744] test protein loss: 4.0249
+[2023-06-30 09:56:50,744] test protein percent loss: 0.2224
+[2023-06-30 09:56:50,746] Epoch 122/150
+[2023-06-30 10:00:01,110] train total loss: 0.2392
+[2023-06-30 10:00:01,111] train cal loss: 10.1332
+[2023-06-30 10:00:01,111] train cal percent loss: 0.0397
+[2023-06-30 10:00:01,111] train mass loss: 7.9998
+[2023-06-30 10:00:01,111] train mass percent loss: 0.0367
+[2023-06-30 10:00:01,112] train fat loss: 0.7023
+[2023-06-30 10:00:01,112] train fat percent loss: 0.0553
+[2023-06-30 10:00:01,113] train carb loss: 1.0692
+[2023-06-30 10:00:01,113] train carb percent loss: 0.0554
+[2023-06-30 10:00:01,114] train protein loss: 0.8862
+[2023-06-30 10:00:01,114] train protein percent loss: 0.0490
+[2023-06-30 10:00:32,755] test total loss: 0.9846
+[2023-06-30 10:00:32,757] test cal loss: 41.3991
+[2023-06-30 10:00:32,758] test cal percent loss: 0.1623
+[2023-06-30 10:00:32,758] test mass loss: 24.5351
+[2023-06-30 10:00:32,759] test mass percent loss: 0.1125
+[2023-06-30 10:00:32,759] test fat loss: 3.1404
+[2023-06-30 10:00:32,760] test fat percent loss: 0.2473
+[2023-06-30 10:00:32,760] test carb loss: 4.7771
+[2023-06-30 10:00:32,760] test carb percent loss: 0.2475
+[2023-06-30 10:00:32,761] test protein loss: 4.0040
+[2023-06-30 10:00:32,762] test protein percent loss: 0.2212
+[2023-06-30 10:00:32,762] Epoch 123/150
+[2023-06-30 10:03:38,339] train total loss: 0.2328
+[2023-06-30 10:03:38,341] train cal loss: 9.9134
+[2023-06-30 10:03:38,342] train cal percent loss: 0.0389
+[2023-06-30 10:03:38,343] train mass loss: 7.6447
+[2023-06-30 10:03:38,345] train mass percent loss: 0.0351
+[2023-06-30 10:03:38,346] train fat loss: 0.6960
+[2023-06-30 10:03:38,347] train fat percent loss: 0.0548
+[2023-06-30 10:03:38,348] train carb loss: 1.0355
+[2023-06-30 10:03:38,349] train carb percent loss: 0.0537
+[2023-06-30 10:03:38,349] train protein loss: 0.8620
+[2023-06-30 10:03:38,350] train protein percent loss: 0.0476
+[2023-06-30 10:04:05,654] test total loss: 0.9847
+[2023-06-30 10:04:05,654] test cal loss: 41.8011
+[2023-06-30 10:04:05,654] test cal percent loss: 0.1639
+[2023-06-30 10:04:05,654] test mass loss: 24.4082
+[2023-06-30 10:04:05,655] test mass percent loss: 0.1120
+[2023-06-30 10:04:05,655] test fat loss: 3.0774
+[2023-06-30 10:04:05,655] test fat percent loss: 0.2423
+[2023-06-30 10:04:05,655] test carb loss: 4.8840
+[2023-06-30 10:04:05,655] test carb percent loss: 0.2531
+[2023-06-30 10:04:05,655] test protein loss: 3.9812
+[2023-06-30 10:04:05,655] test protein percent loss: 0.2200
+[2023-06-30 10:04:05,656] Epoch 124/150
+[2023-06-30 10:07:18,816] train total loss: 0.2257
+[2023-06-30 10:07:18,816] train cal loss: 9.5467
+[2023-06-30 10:07:18,816] train cal percent loss: 0.0374
+[2023-06-30 10:07:18,817] train mass loss: 7.4706
+[2023-06-30 10:07:18,817] train mass percent loss: 0.0343
+[2023-06-30 10:07:18,817] train fat loss: 0.6707
+[2023-06-30 10:07:18,817] train fat percent loss: 0.0528
+[2023-06-30 10:07:18,817] train carb loss: 1.0182
+[2023-06-30 10:07:18,817] train carb percent loss: 0.0528
+[2023-06-30 10:07:18,817] train protein loss: 0.8279
+[2023-06-30 10:07:18,817] train protein percent loss: 0.0457
+[2023-06-30 10:07:45,150] test total loss: 1.0160
+[2023-06-30 10:07:45,152] test cal loss: 43.6905
+[2023-06-30 10:07:45,153] test cal percent loss: 0.1713
+[2023-06-30 10:07:45,154] test mass loss: 25.8450
+[2023-06-30 10:07:45,155] test mass percent loss: 0.1186
+[2023-06-30 10:07:45,157] test fat loss: 3.1798
+[2023-06-30 10:07:45,158] test fat percent loss: 0.2504
+[2023-06-30 10:07:45,159] test carb loss: 4.9527
+[2023-06-30 10:07:45,160] test carb percent loss: 0.2566
+[2023-06-30 10:07:45,162] test protein loss: 4.0479
+[2023-06-30 10:07:45,163] test protein percent loss: 0.2236
+[2023-06-30 10:07:45,164] Epoch 125/150
+[2023-06-30 10:10:57,670] train total loss: 0.2397
+[2023-06-30 10:10:57,671] train cal loss: 10.3000
+[2023-06-30 10:10:57,671] train cal percent loss: 0.0404
+[2023-06-30 10:10:57,671] train mass loss: 8.0634
+[2023-06-30 10:10:57,672] train mass percent loss: 0.0370
+[2023-06-30 10:10:57,672] train fat loss: 0.7067
+[2023-06-30 10:10:57,673] train fat percent loss: 0.0556
+[2023-06-30 10:10:57,674] train carb loss: 1.0111
+[2023-06-30 10:10:57,675] train carb percent loss: 0.0524
+[2023-06-30 10:10:57,676] train protein loss: 0.9197
+[2023-06-30 10:10:57,677] train protein percent loss: 0.0508
+[2023-06-30 10:11:24,653] test total loss: 0.9873
+[2023-06-30 10:11:24,654] test cal loss: 41.2563
+[2023-06-30 10:11:24,656] test cal percent loss: 0.1618
+[2023-06-30 10:11:24,657] test mass loss: 24.7940
+[2023-06-30 10:11:24,658] test mass percent loss: 0.1137
+[2023-06-30 10:11:24,659] test fat loss: 3.0726
+[2023-06-30 10:11:24,659] test fat percent loss: 0.2419
+[2023-06-30 10:11:24,661] test carb loss: 5.0197
+[2023-06-30 10:11:24,662] test carb percent loss: 0.2601
+[2023-06-30 10:11:24,663] test protein loss: 3.9211
+[2023-06-30 10:11:24,663] test protein percent loss: 0.2166
+[2023-06-30 10:11:24,665] Epoch 126/150
+[2023-06-30 10:14:31,994] train total loss: 0.2249
+[2023-06-30 10:14:31,995] train cal loss: 9.5100
+[2023-06-30 10:14:31,995] train cal percent loss: 0.0373
+[2023-06-30 10:14:31,995] train mass loss: 7.4980
+[2023-06-30 10:14:31,996] train mass percent loss: 0.0344
+[2023-06-30 10:14:31,996] train fat loss: 0.6543
+[2023-06-30 10:14:31,996] train fat percent loss: 0.0515
+[2023-06-30 10:14:31,996] train carb loss: 1.0151
+[2023-06-30 10:14:31,997] train carb percent loss: 0.0526
+[2023-06-30 10:14:31,997] train protein loss: 0.8385
+[2023-06-30 10:14:31,997] train protein percent loss: 0.0463
+[2023-06-30 10:14:59,651] test total loss: 0.9933
+[2023-06-30 10:14:59,652] test cal loss: 41.9492
+[2023-06-30 10:14:59,655] test cal percent loss: 0.1645
+[2023-06-30 10:14:59,655] test mass loss: 25.3703
+[2023-06-30 10:14:59,655] test mass percent loss: 0.1164
+[2023-06-30 10:14:59,656] test fat loss: 3.0943
+[2023-06-30 10:14:59,656] test fat percent loss: 0.2436
+[2023-06-30 10:14:59,657] test carb loss: 4.9120
+[2023-06-30 10:14:59,657] test carb percent loss: 0.2545
+[2023-06-30 10:14:59,657] test protein loss: 3.9732
+[2023-06-30 10:14:59,657] test protein percent loss: 0.2195
+[2023-06-30 10:14:59,658] Epoch 127/150
+[2023-06-30 10:18:08,931] train total loss: 0.2288
+[2023-06-30 10:18:08,931] train cal loss: 9.6237
+[2023-06-30 10:18:08,932] train cal percent loss: 0.0377
+[2023-06-30 10:18:08,932] train mass loss: 7.6785
+[2023-06-30 10:18:08,932] train mass percent loss: 0.0352
+[2023-06-30 10:18:08,932] train fat loss: 0.6818
+[2023-06-30 10:18:08,932] train fat percent loss: 0.0537
+[2023-06-30 10:18:08,932] train carb loss: 1.0085
+[2023-06-30 10:18:08,932] train carb percent loss: 0.0523
+[2023-06-30 10:18:08,932] train protein loss: 0.8490
+[2023-06-30 10:18:08,933] train protein percent loss: 0.0469
+[2023-06-30 10:18:35,456] test total loss: 0.9930
+[2023-06-30 10:18:35,457] test cal loss: 42.2575
+[2023-06-30 10:18:35,457] test cal percent loss: 0.1657
+[2023-06-30 10:18:35,457] test mass loss: 25.2233
+[2023-06-30 10:18:35,458] test mass percent loss: 0.1157
+[2023-06-30 10:18:35,458] test fat loss: 3.1137
+[2023-06-30 10:18:35,459] test fat percent loss: 0.2452
+[2023-06-30 10:18:35,459] test carb loss: 4.8643
+[2023-06-30 10:18:35,459] test carb percent loss: 0.2520
+[2023-06-30 10:18:35,459] test protein loss: 3.9712
+[2023-06-30 10:18:35,459] test protein percent loss: 0.2194
+[2023-06-30 10:18:35,460] Epoch 128/150

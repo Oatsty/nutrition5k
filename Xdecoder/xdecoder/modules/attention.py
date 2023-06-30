@@ -214,9 +214,7 @@ def multi_head_attention_forward(
         if in_proj_bias is not None:
             q = linear(query, q_proj_weight_non_opt, in_proj_bias[0:embed_dim])
             k = linear(
-                key,
-                k_proj_weight_non_opt,
-                in_proj_bias[embed_dim : (embed_dim * 2)],
+                key, k_proj_weight_non_opt, in_proj_bias[embed_dim : (embed_dim * 2)]
             )
             v = linear(value, v_proj_weight_non_opt, in_proj_bias[(embed_dim * 2) :])
         else:
@@ -246,11 +244,7 @@ def multi_head_attention_forward(
             if list(attn_mask.size()) != [1, query.size(0), key.size(0)]:
                 raise RuntimeError("The size of the 2D attn_mask is not correct.")
         elif attn_mask.dim() == 3:
-            if list(attn_mask.size()) != [
-                bsz * num_heads,
-                query.size(0),
-                key.size(0),
-            ]:
+            if list(attn_mask.size()) != [bsz * num_heads, query.size(0), key.size(0)]:
                 raise RuntimeError("The size of the 3D attn_mask is not correct.")
         else:
             raise RuntimeError(
@@ -308,9 +302,7 @@ def multi_head_attention_forward(
             [
                 k,
                 torch.zeros(
-                    (k.size(0), 1) + k.size()[2:],
-                    dtype=k.dtype,
-                    device=k.device,
+                    (k.size(0), 1) + k.size()[2:], dtype=k.dtype, device=k.device
                 ),
             ],
             dim=1,
@@ -319,9 +311,7 @@ def multi_head_attention_forward(
             [
                 v,
                 torch.zeros(
-                    (v.size(0), 1) + v.size()[2:],
-                    dtype=v.dtype,
-                    device=v.device,
+                    (v.size(0), 1) + v.size()[2:], dtype=v.dtype, device=v.device
                 ),
             ],
             dim=1,
@@ -332,11 +322,7 @@ def multi_head_attention_forward(
             key_padding_mask = pad(key_padding_mask, (0, 1))
 
     attn_output_weights = torch.bmm(q, k.transpose(1, 2))
-    assert list(attn_output_weights.size()) == [
-        bsz * num_heads,
-        tgt_len,
-        src_len,
-    ]
+    assert list(attn_output_weights.size()) == [bsz * num_heads, tgt_len, src_len]
 
     if attn_mask is not None:
         if attn_mask.dtype == torch.bool:

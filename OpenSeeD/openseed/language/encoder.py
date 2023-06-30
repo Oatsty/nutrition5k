@@ -1,6 +1,7 @@
 import torch
 from timm.models.layers import trunc_normal_
 from torch import nn
+from torch.nn import functional as F
 from utils.prompt_engineering import get_prompt_templates, prompt_engineering
 
 from ..utils import configurable
@@ -98,8 +99,7 @@ class LanguageEncoder(nn.Module):
             arbitary_attention_masks = torch.stack(attention_masks)
 
             text_emb = self.forward_language(
-                (arbitary_tokens.cuda(), arbitary_attention_masks.cuda()),
-                norm=norm,
+                (arbitary_tokens.cuda(), arbitary_attention_masks.cuda()), norm=norm
             )
             setattr(self, "{}_text_embeddings".format(name), text_emb)
         else:
@@ -114,10 +114,7 @@ class LanguageEncoder(nn.Module):
                         return_tensors="pt",
                     )
                     clss_embedding = self.forward_language(
-                        (
-                            tokens["input_ids"].cuda(),
-                            tokens["attention_mask"].cuda(),
-                        ),
+                        (tokens["input_ids"].cuda(), tokens["attention_mask"].cuda()),
                         norm=norm,
                     )
                     clss_embedding = clss_embedding.mean(dim=0)

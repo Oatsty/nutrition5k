@@ -7,11 +7,12 @@
 import logging
 import time
 
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.utils.checkpoint as checkpoint
-from detectron2.modeling import Backbone, ShapeSpec
+from detectron2.modeling import BACKBONE_REGISTRY, Backbone, ShapeSpec
 from detectron2.utils.file_io import PathManager
 from timm.models.layers import DropPath, to_2tuple, trunc_normal_
 

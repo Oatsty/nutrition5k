@@ -39,37 +39,21 @@ def hook_switcher(model, name):
         "bdd10k_val_sem_seg",
         "ade20k_full_sem_seg_val",
     ]:
-        mappings = {
-            "SEMANTIC_ON": True,
-            "INSTANCE_ON": False,
-            "PANOPTIC_ON": False,
-        }
+        mappings = {"SEMANTIC_ON": True, "INSTANCE_ON": False, "PANOPTIC_ON": False}
     elif name in ["cityscapes_fine_instance_seg_val"] or "seginw" in name:
-        mappings = {
-            "SEMANTIC_ON": False,
-            "INSTANCE_ON": True,
-            "PANOPTIC_ON": False,
-        }
+        mappings = {"SEMANTIC_ON": False, "INSTANCE_ON": True, "PANOPTIC_ON": False}
     elif name in [
         "cityscapes_fine_panoptic_val",
         "scannet_21_panoptic_val",
         "bdd10k_40_panoptic_val",
     ]:
-        mappings = {
-            "SEMANTIC_ON": True,
-            "INSTANCE_ON": False,
-            "PANOPTIC_ON": True,
-        }
+        mappings = {"SEMANTIC_ON": True, "INSTANCE_ON": False, "PANOPTIC_ON": True}
     elif name in [
         "coco_2017_val_panoptic_with_sem_seg",
         "ade20k_panoptic_val",
         "coco_2017_test-dev",
     ]:
-        mappings = {
-            "SEMANTIC_ON": True,
-            "INSTANCE_ON": True,
-            "PANOPTIC_ON": True,
-        }
+        mappings = {"SEMANTIC_ON": True, "INSTANCE_ON": True, "PANOPTIC_ON": True}
     else:
         if name not in [
             "vlp_val",

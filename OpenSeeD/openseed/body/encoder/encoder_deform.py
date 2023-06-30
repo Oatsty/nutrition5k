@@ -13,7 +13,7 @@ from detectron2.layers import Conv2d, ShapeSpec, get_norm
 from torch import nn
 from torch.cuda.amp import autocast
 from torch.nn import functional as F
-from torch.nn.init import normal_
+from torch.nn.init import constant_, normal_, uniform_, xavier_uniform_
 from torch.utils import checkpoint
 
 from ...modules import PositionEmbeddingSine
@@ -85,9 +85,7 @@ class MSDeformAttnTransformerEncoderOnly(nn.Module):
         if enable_mask == 0:
             masks = [
                 torch.zeros(
-                    (x.size(0), x.size(2), x.size(3)),
-                    device=x.device,
-                    dtype=torch.bool,
+                    (x.size(0), x.size(2), x.size(3)), device=x.device, dtype=torch.bool
                 )
                 for x in srcs
             ]
@@ -114,10 +112,7 @@ class MSDeformAttnTransformerEncoderOnly(nn.Module):
             spatial_shapes, dtype=torch.long, device=src_flatten.device
         )
         level_start_index = torch.cat(
-            (
-                spatial_shapes.new_zeros((1,)),
-                spatial_shapes.prod(1).cumsum(0)[:-1],
-            )
+            (spatial_shapes.new_zeros((1,)), spatial_shapes.prod(1).cumsum(0)[:-1])
         )
         valid_ratios = torch.stack([self.get_valid_ratio(m) for m in masks], 1)
 
@@ -351,11 +346,7 @@ class OpenSeeDEncoder(nn.Module):
                 input_proj_list.append(
                     nn.Sequential(
                         nn.Conv2d(
-                            in_channels,
-                            conv_dim,
-                            kernel_size=3,
-                            stride=2,
-                            padding=1,
+                            in_channels, conv_dim, kernel_size=3, stride=2, padding=1
                         ),
                         nn.GroupNorm(32, conv_dim),
                     )
@@ -366,11 +357,7 @@ class OpenSeeDEncoder(nn.Module):
             self.input_proj = nn.ModuleList(
                 [
                     nn.Sequential(
-                        nn.Conv2d(
-                            transformer_in_channels[-1],
-                            conv_dim,
-                            kernel_size=1,
-                        ),
+                        nn.Conv2d(transformer_in_channels[-1], conv_dim, kernel_size=1),
                         nn.GroupNorm(32, conv_dim),
                     )
                 ]
@@ -414,11 +401,7 @@ class OpenSeeDEncoder(nn.Module):
             output_norm = get_norm(norm, conv_dim)
 
             lateral_conv = Conv2d(
-                in_channels,
-                conv_dim,
-                kernel_size=1,
-                bias=use_bias,
-                norm=lateral_norm,
+                in_channels, conv_dim, kernel_size=1, bias=use_bias, norm=lateral_norm
             )
             output_conv = Conv2d(
                 conv_dim,

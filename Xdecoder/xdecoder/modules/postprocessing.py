@@ -103,12 +103,7 @@ def bbox_postprocess(result, input_size, img_size, output_height, output_width):
 
     box = torch.stack([x1, y1, x2, y2]).permute(1, 0)
     scale = torch.tensor(
-        [
-            output_width / w,
-            output_height / h,
-            output_width / w,
-            output_height / h,
-        ]
+        [output_width / w, output_height / h, output_width / w, output_height / h]
     )[None, :].to(result.device)
     box = box * scale
     return box

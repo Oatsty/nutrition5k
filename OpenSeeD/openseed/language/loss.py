@@ -58,13 +58,11 @@ def vl_multilabel_contrastive_loss(image_feat, text_feat, temperature=1):
     text_len = text_feat.shape[1]
     # [B, L1, L2]
     pos_labels_batch_img = rearrange(
-        torch.ones_like(dist_per_text) / dist_per_text.size(1),
-        "b l2 l1 -> b l1 l2",
+        torch.ones_like(dist_per_text) / dist_per_text.size(1), "b l2 l1 -> b l1 l2"
     )
     # [B, L2, L1]
     pos_labels_batch_text = rearrange(
-        torch.ones_like(dist_per_img) / dist_per_img.size(1),
-        "b l1 l2 -> b l2 l1",
+        torch.ones_like(dist_per_img) / dist_per_img.size(1), "b l1 l2 -> b l2 l1"
     )
 
     image_x = rearrange(image_feat, "b l c -> (b l) c")
@@ -77,12 +75,7 @@ def vl_multilabel_contrastive_loss(image_feat, text_feat, temperature=1):
     # [B, L1, B, L2, W]
     labels_per_img = F.one_hot(
         torch.ones(
-            batch,
-            img_len,
-            batch,
-            text_len,
-            dtype=torch.long,
-            device=image_x.device,
+            batch, img_len, batch, text_len, dtype=torch.long, device=image_x.device
         )
         * get_rank(),
         num_classes=get_world_size(),
@@ -98,12 +91,7 @@ def vl_multilabel_contrastive_loss(image_feat, text_feat, temperature=1):
     # [B, L2, B, L1, W]
     labels_per_text = F.one_hot(
         torch.ones(
-            batch,
-            text_len,
-            batch,
-            img_len,
-            dtype=torch.long,
-            device=text_x.device,
+            batch, text_len, batch, img_len, dtype=torch.long, device=text_x.device
         )
         * get_rank(),
         num_classes=get_world_size(),
@@ -231,8 +219,7 @@ def ql_multi_contrastive_loss(image_feat, text_feat, text_hash, temperature=1):
 
     text_hash_all_unique = torch.unique(text_hash_all).tolist()
     gt = torch.zeros(
-        (image_feat.shape[0], len(text_hash_all_unique)),
-        device=text_feat.device,
+        (image_feat.shape[0], len(text_hash_all_unique)), device=text_feat.device
     )
     text_hash_all = text_hash_all.tolist()
     text_feat_unique = torch.stack(

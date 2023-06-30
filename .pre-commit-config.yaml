@@ -10,9 +10,22 @@ repos:
       - id: autoflake
         name: autoflake
         entry: poetry run autoflake
-        args: ["--remove-all-unused-imports", "--in-place"]
+        args: ["--in-place"]
         language: system
-        exclude: /__init__\.pyi?$
+        exclude: '''
+        (
+            \.eggs
+          | \.git
+          | \.hg
+          | \.mypy_cache
+          | \.tox
+          | \.vscode
+          | \.venv
+          | /__init__\.pyi?$
+          | ^OpenSeeD/
+          | ^Xdecoder/
+        )
+        '''
         types: [file, python]
       - id: isort
         name: isort

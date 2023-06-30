@@ -136,9 +136,7 @@ def _collate_and_pad_divisibility(tensor_list: list, div=32):
 # _onnx_nested_tensor_from_tensor_list() is an implementation of
 # nested_tensor_from_tensor_list() that is supported by ONNX tracing.
 @torch.jit.unused
-def _onnx_nested_tensor_from_tensor_list(
-    tensor_list: List[Tensor],
-) -> NestedTensor:
+def _onnx_nested_tensor_from_tensor_list(tensor_list: List[Tensor]) -> NestedTensor:
     max_size = []
     for i in range(tensor_list[0].dim()):
         max_size_i = torch.max(
@@ -231,10 +229,7 @@ def get_class_names(name, background=True):
         class_names = CITYSCAPES
     elif name == "cityscapes_fine_instance_seg_val":
         class_names = CITYSCAPES_THING + ["background"]
-    elif name in [
-        "cityscapes_fine_panoptic_val",
-        "cityscapes_fine_panoptic_train",
-    ]:
+    elif name in ["cityscapes_fine_panoptic_val", "cityscapes_fine_panoptic_train"]:
         class_names = CITYSCAPES + ["background"]
     elif name == "bdd10k_val_sem_seg":
         class_names = BDD_SEM

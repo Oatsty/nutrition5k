@@ -3,7 +3,7 @@ from typing import Tuple
 
 import torch
 from detectron2.data import MetadataCatalog
-from detectron2.structures import Boxes, ImageList, Instances
+from detectron2.structures import BitMasks, Boxes, ImageList, Instances
 from detectron2.utils.memory import retry_if_cuda_oom
 from torch import nn
 from torch.nn import functional as F
@@ -153,10 +153,7 @@ class OpenSeeD(nn.Module):
         # update task switch
         task_switch = {}
         task_switch.update(
-            {
-                "bbox": dec_cfg.get("DETECTION", True),
-                "mask": dec_cfg.get("MASK", True),
-            }
+            {"bbox": dec_cfg.get("DETECTION", True), "mask": dec_cfg.get("MASK", True)}
         )
         top_x_layers = {
             "mask": dec_cfg.get("TOP_MASK_LAYERS", 10),

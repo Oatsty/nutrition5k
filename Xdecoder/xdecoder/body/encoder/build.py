@@ -1,4 +1,5 @@
 from .registry import is_model, model_entrypoints
+from .transformer_encoder_fpn import *
 
 
 def build_encoder(config, *args, **kwargs):

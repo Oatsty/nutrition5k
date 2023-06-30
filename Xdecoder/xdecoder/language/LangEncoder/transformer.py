@@ -2,7 +2,9 @@ import logging
 import os
 from collections import OrderedDict
 
+import numpy as np
 import torch
+import torch.nn.functional as F
 from timm.models.layers import DropPath, trunc_normal_
 from torch import nn
 from utils.distributed import is_main_process
@@ -238,7 +240,6 @@ def lang_encoder(config_encoder, tokenizer, verbose, **kwargs):
 
     if config_encoder.get("LOAD_PRETRAINED", False):
         transformer.load_pretrained(
-            config_encoder["PRETRAINED"],
-            config_encoder.get("PRETRAINED_LAYERS", ["*"]),
+            config_encoder["PRETRAINED"], config_encoder.get("PRETRAINED_LAYERS", ["*"])
         )
     return transformer

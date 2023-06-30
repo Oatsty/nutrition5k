@@ -11,7 +11,7 @@ import fvcore.nn.weight_init as weight_init
 import torch
 from detectron2.layers import Conv2d
 from timm.models.layers import trunc_normal_
-from torch import nn
+from torch import Tensor, nn
 from torch.nn import functional as F
 
 from ...modules import PositionEmbeddingSine
@@ -310,10 +310,7 @@ class XDecoder(nn.Module):
 
         # prediction heads on learnable query features
         results = self.forward_prediction_heads(
-            output,
-            mask_features,
-            attn_mask_target_size=size_list[0],
-            task=task,
+            output, mask_features, attn_mask_target_size=size_list[0], task=task
         )
         attn_mask = results["attn_mask"]
         predictions_class.append(results["outputs_class"])
@@ -328,10 +325,7 @@ class XDecoder(nn.Module):
 
             if self.training and task == "vlp" and self.task_switch["captioning"]:
                 attn_mask = torch.cat(
-                    (
-                        attn_mask,
-                        torch.zeros_like(attn_mask[:, : self.contxt_len, :]),
-                    ),
+                    (attn_mask, torch.zeros_like(attn_mask[:, : self.contxt_len, :])),
                     dim=1,
                 )
             # attention: cross-attention first
@@ -466,10 +460,7 @@ class XDecoder(nn.Module):
 
             # prediction heads on learnable query features
             results = self.forward_prediction_heads(
-                output,
-                mask_features,
-                attn_mask_target_size=size_list[0],
-                task=task,
+                output, mask_features, attn_mask_target_size=size_list[0], task=task
             )
             attn_mask = results["attn_mask"]
 
@@ -477,10 +468,7 @@ class XDecoder(nn.Module):
                 level_index = i % self.num_feature_levels
                 attn_mask[torch.where(attn_mask.sum(-1) == attn_mask.shape[-1])] = False
                 attn_mask = torch.cat(
-                    (
-                        attn_mask,
-                        torch.zeros_like(attn_mask[:, : self.contxt_len, :]),
-                    ),
+                    (attn_mask, torch.zeros_like(attn_mask[:, : self.contxt_len, :])),
                     dim=1,
                 )
                 self_tgt_mask = self.self_attn_mask.repeat(
@@ -497,9 +485,7 @@ class XDecoder(nn.Module):
                         bs, nq, size_list[i % 3][0], size_list[i % 3][1]
                     )
                     cap_mask = F.interpolate(
-                        cap_mask[None,].float(),
-                        size_list[i % 3],
-                        mode="nearest",
+                        cap_mask[None,].float(), size_list[i % 3], mode="nearest"
                     ).bool()[0, 0]
                     attn_mask[:, self.num_queries :, cap_mask] = True
                     attn_mask = attn_mask.reshape(bs, nq, wh)
@@ -554,12 +540,7 @@ class XDecoder(nn.Module):
         return out
 
     def forward_prediction_heads(
-        self,
-        output,
-        mask_features,
-        attn_mask_target_size,
-        layer_id=-1,
-        task="seg",
+        self, output, mask_features, attn_mask_target_size, layer_id=-1, task="seg"
     ):
         decoder_output = self.decoder_norm(output)
         decoder_output = decoder_output.transpose(0, 1)
@@ -608,8 +589,7 @@ class XDecoder(nn.Module):
         class_embed = decoder_output @ self.class_embed
         # HACK do not compute similarity if mask is not on
         outputs_class = self.lang_encoder.compute_similarity(
-            class_embed,
-            fake=(((not self.task_switch["mask"]) and self.training)),
+            class_embed, fake=(((not self.task_switch["mask"]) and self.training))
         )
 
         if self.task_switch["mask"]:
@@ -681,12 +661,7 @@ class XDecoder(nn.Module):
         # as a dict having both a Tensor and a list.
         if self.mask_classification:
             return [
-                {
-                    "pred_logits": a,
-                    "pred_masks": b,
-                    "pred_boxes": c,
-                    "pred_captions": d,
-                }
+                {"pred_logits": a, "pred_masks": b, "pred_boxes": c, "pred_captions": d}
                 for a, b, c, d in zip(
                     outputs_class[:-1],
                     outputs_seg_masks[:-1],

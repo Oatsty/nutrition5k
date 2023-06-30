@@ -32,12 +32,7 @@ class Transformer(nn.Module):
         super().__init__()
 
         encoder_layer = TransformerEncoderLayer(
-            d_model,
-            nhead,
-            dim_feedforward,
-            dropout,
-            activation,
-            normalize_before,
+            d_model, nhead, dim_feedforward, dropout, activation, normalize_before
         )
         encoder_norm = nn.LayerNorm(d_model) if normalize_before else None
         self.encoder = TransformerEncoder(
@@ -45,12 +40,7 @@ class Transformer(nn.Module):
         )
 
         decoder_layer = TransformerDecoderLayer(
-            d_model,
-            nhead,
-            dim_feedforward,
-            dropout,
-            activation,
-            normalize_before,
+            d_model, nhead, dim_feedforward, dropout, activation, normalize_before
         )
         decoder_norm = nn.LayerNorm(d_model)
         self.decoder = TransformerDecoder(
@@ -208,11 +198,7 @@ class TransformerEncoderLayer(nn.Module):
         q = k = self.with_pos_embed(src, pos)
 
         src2 = self.self_attn(
-            q,
-            k,
-            value=src,
-            attn_mask=src_mask,
-            key_padding_mask=src_key_padding_mask,
+            q, k, value=src, attn_mask=src_mask, key_padding_mask=src_key_padding_mask
         )[0]
         src = src + self.dropout1(src2)
         src = self.norm1(src)
@@ -231,11 +217,7 @@ class TransformerEncoderLayer(nn.Module):
         src2 = self.norm1(src)
         q = k = self.with_pos_embed(src2, pos)
         src2 = self.self_attn(
-            q,
-            k,
-            value=src2,
-            attn_mask=src_mask,
-            key_padding_mask=src_key_padding_mask,
+            q, k, value=src2, attn_mask=src_mask, key_padding_mask=src_key_padding_mask
         )[0]
         src = src + self.dropout1(src2)
         src2 = self.norm2(src)
@@ -299,11 +281,7 @@ class TransformerDecoderLayer(nn.Module):
     ):
         q = k = self.with_pos_embed(tgt, query_pos)
         tgt2 = self.self_attn(
-            q,
-            k,
-            value=tgt,
-            attn_mask=tgt_mask,
-            key_padding_mask=tgt_key_padding_mask,
+            q, k, value=tgt, attn_mask=tgt_mask, key_padding_mask=tgt_key_padding_mask
         )[0]
         tgt = tgt + self.dropout1(tgt2)
         tgt = self.norm1(tgt)
@@ -335,11 +313,7 @@ class TransformerDecoderLayer(nn.Module):
         tgt2 = self.norm1(tgt)
         q = k = self.with_pos_embed(tgt2, query_pos)
         tgt2 = self.self_attn(
-            q,
-            k,
-            value=tgt2,
-            attn_mask=tgt_mask,
-            key_padding_mask=tgt_key_padding_mask,
+            q, k, value=tgt2, attn_mask=tgt_mask, key_padding_mask=tgt_key_padding_mask
         )[0]
         tgt = tgt + self.dropout1(tgt2)
         tgt2 = self.norm2(tgt)

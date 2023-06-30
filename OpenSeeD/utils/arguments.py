@@ -56,19 +56,14 @@ def load_opt_command(args):
     )
     parser.add_argument("command", help="Command: train/evaluate/train-and-evaluate")
     parser.add_argument(
-        "--conf_files",
-        nargs="+",
-        required=True,
-        help="Path(s) to the config file(s).",
+        "--conf_files", nargs="+", required=True, help="Path(s) to the config file(s)."
     )
     parser.add_argument(
         "--user_dir",
         help="Path to the user defined module for tasks (models, criteria), optimizers, and lr schedulers.",
     )
     parser.add_argument(
-        "--image_path",
-        help="Path to the user input image",
-        default="images/street.jpg",
+        "--image_path", help="Path to the user input image", default="images/street.jpg"
     )
     parser.add_argument(
         "--config_overrides",
