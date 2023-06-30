@@ -17,6 +17,11 @@ jobs:
         uses: actions/setup-python@v1
         with:
           python-version: ${{ matrix.python-version }}
+      - name: Make files
+        run: |
+          cd OpenSeeD/openseed/body/encoder/ops
+          sh mask.sh
+          cd -
       - name: Install Conda
         run: |
           curl -sSL \
