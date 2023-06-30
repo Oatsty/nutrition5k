@@ -18,7 +18,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install PiP
-        run: python3 -m pip install -r OpenSeeDrequirements.txt
+        run: python3 -m pip install -r OpenSeeD/requirements.txt
       - name: Install Conda Packages
         run: |
           $CONDA/bin/conda update conda -y
