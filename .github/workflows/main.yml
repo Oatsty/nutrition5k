@@ -33,7 +33,7 @@ jobs:
           echo "$HOME/.local/bin" >> $GITHUB_PATH
       - name: Install Detectron2
         run: |
-          python3 -m pip install 'git+https://github.com/MaureenZOU/detectron2-xyz.git'
+          poetry run python3 -m pip install 'git+https://github.com/MaureenZOU/detectron2-xyz.git'
       - name: Install Packages
         run: |
           poetry config --local virtualenvs.in-project true      
