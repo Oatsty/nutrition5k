@@ -20,7 +20,7 @@ jobs:
       - name: Make files
         run: |
           cd OpenSeeD/openseed/body/encoder/ops
-          sh mask.sh
+          sh make.sh
           cd -
       - name: Install Conda
         run: |
