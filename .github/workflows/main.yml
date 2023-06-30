@@ -89,6 +89,7 @@ jobs:
           conda run python3 -m pip install 'git+https://github.com/MaureenZOU/detectron2-xyz.git'
       - name: Make Files
         run: |
+          export FORCE_CUDA=1
           cd OpenSeeD/openseed/body/encoder/ops
           conda run sh make.sh
           cd -
