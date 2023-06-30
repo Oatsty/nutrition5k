@@ -21,9 +21,6 @@ jobs:
         run: |
           $CONDA/bin/conda update conda -y
           $CONDA/bin/conda install -c conda-forge --file requirements.txt -y
-      - name: Install Detectron2
-        run: |
-          conda run python3 -m pip install 'git+https://github.com/MaureenZOU/detectron2-xyz.git'
       - name: Install Poetry
         run: |
           curl -sSL https://install.python-poetry.org | python3 -
@@ -32,6 +29,10 @@ jobs:
       - name: Install Packages
         run: |
           poetry config --local virtualenvs.in-project true
+          poetry install
+      - name: Install Detectron2
+        run: |
+          poetry run python3 -m pip install 'git+https://github.com/MaureenZOU/detectron2-xyz.git'
           poetry install
       - name: Make files
         run: |
