@@ -1,0 +1,31 @@
+DATA:
+  IMGS_DIR: tests/data/img
+  METADATAS_PATH: tests/data/metadata.csv
+  NAME: nutrition5k
+  SPLITS_TEST_PATH: tests/splits/test_ids.txt
+  SPLITS_TRAIN_PATH: tests/splits/train_ids.txt
+EVAL:
+  HEIGHT: 480
+  WIDTH: 640
+MODEL:
+  MASK_WEIGHT: 0.5
+  NAME: openseed
+  PRETRAINED: ''
+SAVE_PATH: models/test/test2.pt
+TITLE:
+- test2
+TRAIN:
+  BATCH_SIZE: 1
+  CKPT: null
+  FINETUNE: false
+  LAYERS: 1
+  LOSS: multi
+  LR: 5.0e-05
+  NOISE_REMOVAL_EPOCHS: 1
+  NUM_EPOCHS: 3
+  REMOVAL_WEIGHT: 0.1
+  REMOVE_RATE: 0.03
+  SEED: 12345
+  TRAINER: noisy
+  WARMUP_EPOCHS: 1
+  WEIGHT_DECAY: 0.0001

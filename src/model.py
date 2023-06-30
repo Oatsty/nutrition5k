@@ -26,7 +26,6 @@ class Regressor(BaseRegressor):
         self.fc1 = nn.Sequential(
             nn.Linear(in_dim, hidden_dim),
             nn.ReLU(),
-            nn.Dropout(dropout_rate),
         )
         self.regress1 = nn.ModuleDict(
             {

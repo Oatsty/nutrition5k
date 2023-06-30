@@ -1,8 +1,10 @@
 import os
 import sys
 
-sys.path.insert(0, "/home/parinayok/nutrition5k/OpenSeeD")
-sys.path.append("/home/parinayok/nutrition5k")
+pth = "/".join(sys.path[0].split("/")[:-1])
+openseed_pth = "/".join([pth, "OpenSeeD"])
+sys.path.insert(0, openseed_pth)
+sys.path.append(pth)
 
 import logging
 
