@@ -35,7 +35,7 @@ jobs:
       - name: Make files
         run: |
           cd OpenSeeD/openseed/body/encoder/ops
-          poetry run python -m build setup.py
+          poetry run sh make.sh
           cd -
       - name: Run Lint
         run: |
