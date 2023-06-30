@@ -4,7 +4,7 @@ env:
 on: [push]
 jobs:
   deploy-cpu:
-    name: CI
+    name: CI-CPU
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -26,13 +26,6 @@ jobs:
       - name: Install Detectron2
         run: |
           conda run python3 -m pip install 'git+https://github.com/MaureenZOU/detectron2-xyz.git'
-      # - name: Make Files
-      #   run: |
-      #     export OMPI_MCA_opal_cuda_support=true
-      #     export FORCE_CUDA="1"
-      #     cd OpenSeeD/openseed/body/encoder/ops
-      #     conda run sh make.sh
-      #     cd -
       - name: Install Poetry
         run: |
           curl -sSL https://install.python-poetry.org | python3 -
@@ -45,10 +38,10 @@ jobs:
           poetry run pre-commit run --all-files
       - name: Run Test
         run: |
-          poetry run pytest --no-header -v
+          conda run poetry run pytest --no-header -v
 
   deploy-gpu:
-    name: CI
+    name: CI-GPU
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
