@@ -17,6 +17,14 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
+      - name: Install conda Packages
+        run: |
+          curl -sSL \
+          "https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh" -o ~/miniconda.sh
+          bash ~/miniconda.sh -b -p $HOME/miniconda
+          export "$HOME/miniconda/bin" >> $GITHUB_PATH
+          conda update conda -y
+          conda install -c conda-forge requirements.txt -y
       - name: Install Poetry
         run: |
           curl -sSL https://install.python-poetry.org | python3 -
@@ -24,15 +32,6 @@ jobs:
       - name: Install Packages
         run: |
           poetry install
-      - name: Install conda Packages
-        run: |
-          curl -sSL \
-          "https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh" > \
-          "Miniconda3.sh"
-          bash Miniconda3.sh
-          export "$HOME/miniconda/bin" >> $GITHUB_PATH
-          conda update conda
-          conda install -c conda-forge requirements.txt
       - name: Run Lint
         run: |
           poetry run pre-commit run --all-files
