@@ -37,7 +37,7 @@ jobs:
           poetry install
       - name: Install Detectron2
         run: |
-          python -m pip install 'git+https://github.com/MaureenZOU/detectron2-xyz.git'
+          poetry run python -m pip install 'git+https://github.com/MaureenZOU/detectron2-xyz.git'
       - name: Run Lint
         run: |
           poetry run pre-commit run --all-files
