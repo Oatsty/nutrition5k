@@ -68,7 +68,7 @@ jobs:
       - name: apt-get install
         run: |
           apt-get update -y
-          apt-get install curl
+          apt-get install -y curl
       - name: Install Conda
         run: |
           curl -sSL \
