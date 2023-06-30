@@ -21,11 +21,6 @@ jobs:
         run: |
           $CONDA/bin/conda update conda -y
           $CONDA/bin/conda install -c conda-forge --file requirements.txt -y
-      - name: Make files
-        run: |
-          cd OpenSeeD/openseed/body/encoder/ops
-          conda run sh make.sh
-          cd -
       - name: Install Detectron2
         run: |
           conda run python3 -m pip install 'git+https://github.com/MaureenZOU/detectron2-xyz.git'
@@ -38,6 +33,11 @@ jobs:
         run: |
           poetry config --local virtualenvs.in-project true
           poetry install
+      - name: Make files
+        run: |
+          cd OpenSeeD/openseed/body/encoder/ops
+          poetry run sh make.sh
+          cd -
       - name: Run Lint
         run: |
           poetry run pre-commit run --all-files
