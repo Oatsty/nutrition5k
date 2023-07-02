@@ -9,12 +9,13 @@ EVAL:
   WIDTH: 640
 MODEL:
   DROPOUT_RATE: 0.1
-  MASK_WEIGHT: 0.9
+  MASK_WEIGHT: 0.6
   NAME: swin
   PRETRAINED: microsoft/swin-tiny-patch4-window7-224
-SAVE_PATH: models/swin/mask/fpnswin_mask0.9_1drop1_warmup_150ep_mltscl.pt
+SAVE_PATH: models/swin/mask/fpnswin_mask0.6_1drop1_warmup_150ep_mltscl.pt
 TITLE:
-- fpn openseed swin mask 0.9 with aug+rotate fc 0.1 dropout 1 layers with warmup 150ep multi scale
+- fpn openseed swin mask 0.6 with aug+rotate fc 0.1 dropout 1 layers with warmup 150ep
+  multi scale
 TRAIN:
   BATCH_SIZE: 16
   CKPT: null
@@ -26,6 +27,7 @@ TRAIN:
   NUM_EPOCHS: 150
   REMOVAL_WEIGHT: 0.1
   REMOVE_RATE: 0.03
+  SCHEDULER_WARMUP: 20
   SEED: 12345
   TRAINER: mask
   WARMUP_EPOCHS: 10
