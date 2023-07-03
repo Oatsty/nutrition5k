@@ -1,5 +1,6 @@
 # torch
 # torchvision
+pillow==9.5.0
 opencv-python
 pyyaml
 json_tricks
