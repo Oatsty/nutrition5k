@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 
 import torch
 import torch.optim as optim
-from custom_utils import AverageMeterDict, get_keys, get_loss
+from custom_utils import AverageMeter, AverageMeterDict, get_keys, get_loss
 from dataset import collate_fn, make_dataset
 from model import BaseModel
 from timm.scheduler import CosineLRScheduler
@@ -41,6 +41,8 @@ class BaseTrainer(ABC):
         keys = get_keys(config)
         keys.insert(0, "total")
         self.avg_meter = AverageMeterDict(keys)
+        self.mean = self.dataset["train"].mean_metadata
+        self.std = self.dataset["train"].std_metadata
 
     @abstractmethod
     def init_train(self, config: CN, model: BaseModel) -> None:
@@ -65,6 +67,7 @@ class BaseTrainer(ABC):
         ...
 
     def display_loss(self, phase: str):
+        apmae = AverageMeter()
         for key, key_loss in self.avg_meter.iter_avg():
             if key == "total":
                 logger.info(f"{phase} {key} loss: {key_loss:.4f}")
@@ -72,10 +75,12 @@ class BaseTrainer(ABC):
             if key == "ingrs":
                 logger.info(f"{phase} {key} percent loss: {key_loss:.4f}")
                 continue
-            mean = self.dataset[phase].mean_metadata.__getattribute__(key)
-            std = self.dataset[phase].std_metadata.__getattribute__(key)
+            mean = self.mean.__getattribute__(key)
+            std = self.std.__getattribute__(key)
             logger.info(f"{phase} {key} loss: {key_loss * std:.4f}")
             logger.info(f"{phase} {key} percent loss: {key_loss * std / mean:.4f}")
+            apmae.update(key_loss * std / mean)
+        logger.info(f"{phase} average percent loss: {apmae.avg:.4f}")
 
     def train(self, config: CN, model: BaseModel, device: torch.device) -> None:
         self.init_train(config, model)

@@ -55,7 +55,10 @@ class MaskLPTrainer(BaseTrainer):
             outputs = model(rgb_img, depth_img, mask=mask)
             if phase == "train":
                 loss_multi = self.loss_func(outputs, metadata, device, p=self.lp)
-                loss = sum(loss_multi.values())
+                loss = sum(
+                    v * self.std.__getattribute__(k) / self.mean.__getattribute__(k)
+                    for k, v in loss_multi.items()
+                )
                 assert isinstance(loss, torch.Tensor)
                 loss.backward()
                 self.optimizer.step()

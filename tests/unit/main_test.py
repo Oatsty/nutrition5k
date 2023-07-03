@@ -34,3 +34,11 @@ def test2(mock_args):
 )
 def test3(mock_args):
     main()
+
+
+@mock.patch(
+    "argparse.ArgumentParser.parse_args",
+    return_value=argparse.Namespace(cfg="tests/config/test4.yaml"),
+)
+def test4(mock_args):
+    main()
