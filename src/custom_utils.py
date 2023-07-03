@@ -19,10 +19,33 @@ def get_keys(config: CN):
         raise ValueError(f"Invalid loss function: {loss}")
 
 
+class Lploss(nn.Module):
+    def __init__(self, p: float, reduction: str = "mean") -> None:
+        super(Lploss, self).__init__()
+        self.reduction = reduction
+        self.p = p
+
+    def forward(self, output: torch.Tensor, target: torch.Tensor):
+        N = output.shape[0]
+        l1loss = (output - target).abs()
+        entropy = torch.clip(self.p * torch.log(l1loss + 1e-20), -1e20, 20)
+        loss = torch.exp(entropy)
+        loss = loss.sum()
+        loss = torch.clip(loss, 0, 1e20)
+        loss = torch.exp(torch.log(loss + 1e-20) / self.p)
+        if self.reduction == "mean":
+            return loss / N
+        elif self.reduction == "sum":
+            return loss
+        else:
+            raise ValueError(f"Unknown reduction: {self.reduction}")
+
+
 def loss_func_multi(
     outputs: dict[str, torch.Tensor],
     metadata: list[Metadata],
     device: torch.device,
+    p: float = 1.0,
     **kwargs,
 ) -> dict[str, torch.Tensor]:
     loss_multi = {
@@ -32,7 +55,10 @@ def loss_func_multi(
         target = torch.tensor([met.__getattribute__(key) for met in metadata]).to(
             device
         )
-        loss_multi[key] = nn.L1Loss(**kwargs)(outputs[key].squeeze(), target)
+        if p == 1.0:
+            loss_multi[key] = nn.L1Loss(**kwargs)(outputs[key].squeeze(-1), target)
+        else:
+            loss_multi[key] = Lploss(p, **kwargs)(outputs[key].squeeze(-1), target)
     return loss_multi
 
 

@@ -48,6 +48,7 @@ _C.TRAIN.NOISE_REMOVAL_EPOCHS = 20
 _C.TRAIN.REMOVE_RATE = 0.03
 _C.TRAIN.REMOVAL_WEIGHT = 0.1
 _C.TRAIN.LR = 0.01
+_C.TRAIN.LP = 1.0
 _C.TRAIN.NUM_EPOCHS = 20
 _C.TRAIN.WEIGHT_DECAY = 1e-4
 _C.TRAIN.CKPT = None
@@ -122,6 +123,8 @@ def update_config(config, args):
         config.TRAIN.BATCH_SIZE = args.batch_size
     if _check_args("lr"):
         config.TRAIN.LR = args.lr
+    if _check_args("lp"):
+        config.TRAIN.LP = args.lp
     if _check_args("num_epochs"):
         config.TRAIN.NUM_EPOCHS = args.num_epochs
     if _check_args("warmup_epochs"):
@@ -199,6 +202,7 @@ def get_parser() -> argparse.ArgumentParser:
     parser.add_argument("--train-loss", type=str)
     parser.add_argument("--batch-size", type=int)
     parser.add_argument("--lr", type=float)
+    parser.add_argument("--lp", type=float)
     parser.add_argument("--num-epochs", type=int)
     parser.add_argument("--warmup-epochs", type=int)
     parser.add_argument("--noise-removal-epochs", type=int)
