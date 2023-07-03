@@ -2,9 +2,9 @@
 from typing import Tuple
 
 import torch
-from detectron2.data import MetadataCatalog
 from detectron2.structures import BitMasks, Boxes, ImageList, Instances
 from detectron2.utils.memory import retry_if_cuda_oom
+from src.custom_utils import MetadataCatalog
 from torch import nn
 from torch.nn import functional as F
 
