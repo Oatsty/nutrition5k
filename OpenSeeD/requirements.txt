@@ -1,5 +1,5 @@
-torch
-torchvision
+# torch
+# torchvision
 opencv-python
 pyyaml
 json_tricks
