@@ -14,8 +14,8 @@ MODEL:
   PRETRAINED: microsoft/swin-tiny-patch4-window7-224
 SAVE_PATH: models/swin/mask_lp_modloss/ingrs_mod_fpnswin_mask0.8_lp0.8_1drop1_warmup_150ep_mltscl.pt
 TITLE:
-- fpn openseed swin mask 0.2 lossp=0.8 modified loss with aug+rotate fc 0.1 dropout 1 layers with warmup 150ep
-  multi scale ingrs_loss modified
+- fpn openseed swin mask 0.2 lossp=0.8 modified loss with aug+rotate fc 0.1 dropout
+  1 layers with warmup 150ep multi scale ingrs_loss modified
 TRAIN:
   BATCH_SIZE: 16
   CKPT: null
@@ -28,6 +28,7 @@ TRAIN:
   NUM_EPOCHS: 150
   REMOVAL_WEIGHT: 0.1
   REMOVE_RATE: 0.03
+  SCHEDULER_WARMUP: 20
   SEED: 12345
   TRAINER: mask_lp
   WARMUP_EPOCHS: 10

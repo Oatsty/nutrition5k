@@ -90,8 +90,8 @@ class RegressorIngrs(BaseRegressor):
         )
 
     def forward(self, x):
-        out_ingrs = self.regress_ingrs(x)
         x = self.fc1(x)
+        out_ingrs = self.regress_ingrs(x)
         out = {d: self.regress[d](x) for d in ["cal", "mass", "fat", "carb", "protein"]}
         out["ingrs"] = out_ingrs
         return out
