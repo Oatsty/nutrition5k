@@ -7,7 +7,9 @@ from einops import rearrange
 from seg_openseed import OpenSeeDSeg
 from torch import nn
 from torchvision.ops import FeaturePyramidNetwork
-from transformers import ResNetModel, SwinModel  # type: ignore
+from transformers.models.resnet.modeling_resnet import ResNetModel
+from transformers.models.swin.modeling_swin import SwinModel
+from transformers.utils.generic import ModelOutput
 from yacs.config import CfgNode as CN
 
 
@@ -372,10 +374,12 @@ class FPNSwin(BaseModel):
         depth_img = depth_img.expand(-1, 3, -1, -1)
         assert isinstance(self.rgb_backbone, SwinModel)
         assert isinstance(self.depth_backbone, SwinModel)
-        rgb_features = self.rgb_backbone.forward(rgb_img, output_hidden_states=True)
+        rgb_features = self.rgb_backbone.forward(rgb_img, output_hidden_states=True)  # type: ignore
         depth_features = self.depth_backbone.forward(
-            depth_img, output_hidden_states=True
+            depth_img, output_hidden_states=True  # type: ignore
         )
+        assert isinstance(rgb_features, ModelOutput)
+        assert isinstance(depth_features, ModelOutput)
         rgb_features_hid = rgb_features.hidden_states
         depth_features_hid = depth_features.hidden_states
         assert isinstance(rgb_features_hid, tuple)
@@ -446,48 +450,63 @@ class FPNSwin(BaseModel):
 def get_model(config: CN, device: torch.device) -> BaseModel:
     mod = config.MODEL.NAME
     pretrained_model = config.MODEL.PRETRAINED
+    loss = config.TRAIN.LOSS
     # layers = config.TRAIN.LAYERS
     # finetune = config.TRAIN.FINETUNE
     mask_weight = config.MODEL.MASK_WEIGHT
     dropout_rate = config.MODEL.DROPOUT_RATE
-    if mod == "inceptionv2":
-        model = SimpleInceptionV2(
-            4096,
-            pretrained_model,
-            regressor=Regressor(6144, 4096, dropout_rate=dropout_rate),
-        )
-    elif mod == "resnet50":
-        model = FPN(
-            512,
-            pretrained_model,
-            regressor=Regressor(2048, 2048, dropout_rate=dropout_rate),
-        )
-    elif mod == "resnet101":
-        model = FPN(
-            512,
-            pretrained_model,
-            regressor=Regressor(2048, 2048, dropout_rate=dropout_rate),
-        )
-    elif mod == "swin":
-        model = FPNSwin(
-            512,
-            pretrained_model,
-            regressor=Regressor(2048, 2048, dropout_rate=dropout_rate),
-            mask_weight=mask_weight,
-            dropout_rate=dropout_rate,
-        )
-    elif mod == "openseed":
-        model = FPNOpenSeeD(
-            512,
-            regressor=Regressor(2048, 2048, dropout_rate=dropout_rate),
-            mask_weight=mask_weight,
-        )
-    elif mod == "resnet50-ingrs":
-        model = FPN(512, pretrained_model, regressor=RegressorIngrs(2048, 2048))
-    elif mod == "resnet101-ingrs":
-        model = FPN(512, pretrained_model, regressor=RegressorIngrs(2048, 2048))
+    if loss == "multi":
+        if mod == "inceptionv2":
+            model = SimpleInceptionV2(
+                4096,
+                pretrained_model,
+                regressor=Regressor(6144, 4096, dropout_rate=dropout_rate),
+            )
+        elif mod == "resnet50":
+            model = FPN(
+                512,
+                pretrained_model,
+                regressor=Regressor(2048, 2048, dropout_rate=dropout_rate),
+            )
+        elif mod == "resnet101":
+            model = FPN(
+                512,
+                pretrained_model,
+                regressor=Regressor(2048, 2048, dropout_rate=dropout_rate),
+            )
+        elif mod == "swin":
+            model = FPNSwin(
+                512,
+                pretrained_model,
+                regressor=Regressor(2048, 2048, dropout_rate=dropout_rate),
+                mask_weight=mask_weight,
+                dropout_rate=dropout_rate,
+            )
+        elif mod == "openseed":
+            model = FPNOpenSeeD(
+                512,
+                regressor=Regressor(2048, 2048, dropout_rate=dropout_rate),
+                mask_weight=mask_weight,
+            )
+        else:
+            raise ValueError(f"Unkown model and loss: {mod} and {loss}")
+    elif loss == "multi_ingrs":
+        if mod == "resnet50-ingrs":
+            model = FPN(512, pretrained_model, regressor=RegressorIngrs(2048, 2048))
+        elif mod == "resnet101-ingrs":
+            model = FPN(512, pretrained_model, regressor=RegressorIngrs(2048, 2048))
+        elif mod == "swin":
+            model = FPNSwin(
+                512,
+                pretrained_model,
+                regressor=RegressorIngrs(2048, 2048),
+                mask_weight=mask_weight,
+                dropout_rate=dropout_rate,
+            )
+        else:
+            raise ValueError(f"Unkown model and loss: {mod} and {loss}")
     else:
-        raise ValueError(f"Unkown model: {mod}")
+        raise ValueError(f"Unkown model and loss: {mod} and {loss}")
 
     # model.backbone.requires_grad_(False)
     return model

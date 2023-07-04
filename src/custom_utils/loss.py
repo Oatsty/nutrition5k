@@ -93,8 +93,8 @@ def loss_func_multi_ingr(
     loss_multi = loss_func_multi(outputs, metadata, device, **kwargs)
     target_ingrs = met_to_ingr_tensor(metadata, device)
     loss_multi["ingrs"] = (
-        nn.CrossEntropyLoss()(outputs["ingrs"], target_ingrs) / 6.31
-    )  # ln(555)
+        nn.CrossEntropyLoss()(outputs["ingrs"], target_ingrs) / 6.31  # ln(555)
+    )
     return loss_multi
 
 

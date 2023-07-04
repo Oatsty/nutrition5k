@@ -57,6 +57,8 @@ class MaskLPTrainer(BaseTrainer):
                 loss_multi = self.loss_func(outputs, metadata, device, p=self.lp)
                 loss = sum(
                     v * self.std.__getattribute__(k) / self.mean.__getattribute__(k)
+                    if k != "ingrs"
+                    else v
                     for k, v in loss_multi.items()
                 )
                 assert isinstance(loss, torch.Tensor)
