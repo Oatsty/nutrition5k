@@ -3,8 +3,10 @@ from abc import ABC, abstractmethod
 import timm
 import torch
 import torch.nn.functional as f
+from custom_utils import get_pos_embed_3d
 from einops import rearrange
 from seg_openseed import OpenSeeDSeg
+from timm.models.vision_transformer import Attention
 from torch import nn
 from torchvision.ops import FeaturePyramidNetwork
 from transformers.models.resnet.modeling_resnet import ResNetModel
@@ -97,45 +99,48 @@ class RegressorIngrs(BaseRegressor):
         return out
 
 
-class SelfAttention(nn.Module):
-    def __init__(self, dim, heads=8, dim_head=64):
-        super().__init__()
-        inner_dim = dim_head * heads
-        self.heads = heads
-        self.scale = dim_head**-0.5
-        self.norm = nn.LayerNorm(dim)
-
-        self.attend = nn.Softmax(dim=-1)
-
-        self.to_q = nn.Linear(dim, inner_dim, bias=False)
-        self.to_k = nn.Linear(dim, inner_dim, bias=False)
-        self.to_v = nn.Linear(dim, inner_dim, bias=False)
-        self.to_out = nn.Linear(inner_dim, dim, bias=False)
-        for module in self.modules():
-            if isinstance(module, nn.Linear):
-                nn.init.xavier_uniform_(module.weight)
-        self.to_v.weight.data *= 0.67
-        self.to_out.weight.data *= 0.67
+class CrossAttentionBlock(nn.Module):
+    def __init__(self, model_dim: int, num_heads: int, mlp_ratio: float) -> None:
+        super(CrossAttentionBlock, self).__init__()
+        self.layernorm1 = nn.LayerNorm(model_dim)
+        self.attention1 = Attention(model_dim, num_heads)
+        self.layernorm2 = nn.LayerNorm(model_dim)
+        self.attention2 = Attention(model_dim, num_heads)
+        mlp_dim = int(model_dim * mlp_ratio)
+        self.mlp = nn.Sequential(
+            nn.Linear(model_dim, mlp_dim),
+            nn.GELU(),
+            nn.Linear(mlp_dim, model_dim),
+        )
+        self.layernorm3 = nn.LayerNorm(model_dim)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        q = self.to_q(x)
-        k = self.to_k(x)
-        v = self.to_v(x)
-        q, k, v = map(
-            lambda t: rearrange(t, "b n (h d) -> b h n d", h=self.heads),
-            [q, k, v],
+        n, b, c, h, w = x.shape
+        x = rearrange(x, "b n h w c -> (b n) (h w) c")
+        x = self.attention1(self.layernorm1(x)) + x
+        x = rearrange(x, "(b n) (h w) c -> (b h w) n c", b=b, h=h)
+        x = self.attention2(self.layernorm2(x)) + x
+        x = rearrange(x, "(b h w) n c ->  b n h w c", b=b, h=h)
+        x = self.mlp(self.layernorm3(x)) + x
+        return x
+
+
+class CrossAttentionDecoder(nn.Module):
+    def __init__(
+        self, model_dim: int, num_layers: int, num_heads: int, mlp_ratio: float
+    ) -> None:
+        super(CrossAttentionDecoder, self).__init__()
+        self.blocks = nn.ModuleList(
+            [
+                CrossAttentionBlock(model_dim, num_heads, mlp_ratio)
+                for _ in range(num_layers)
+            ]
         )
 
-        dots = torch.matmul(q, k.transpose(-1, -2)) * self.scale
-
-        attn = self.attend(dots)
-
-        out = torch.matmul(attn, v)
-        out = rearrange(out, "b h n d -> b n (h d)")
-        out = self.to_out(out)
-        out = out + x
-        # out = self.norm(out + x)
-        return out
+    def forward(self, x) -> torch.Tensor:
+        for block in self.blocks:
+            x = block(x)
+        return x
 
 
 class BaseModel(nn.Module, ABC):
@@ -188,7 +193,7 @@ class FPN(BaseModel):
         channel_list = [256, 512, 1024, 2048]
         self.resolution_level = resolution_level
         self.fpn = FeaturePyramidNetwork(channel_list, hidden_dim)
-        self.attention = SelfAttention(hidden_dim)
+        self.attention = Attention(hidden_dim)
         self.pooling = nn.AdaptiveAvgPool2d(1)
         self.flatten = nn.Flatten()
         self.regressor = regressor
@@ -252,7 +257,7 @@ class FPNOpenSeeD(BaseModel):
         self.mask_weight = mask_weight
         self.rgb_fpn = FeaturePyramidNetwork(channel_list, hidden_dim)
         self.depth_fpn = FeaturePyramidNetwork(channel_list, hidden_dim)
-        self.attention = SelfAttention(hidden_dim)
+        self.attention = Attention(hidden_dim)
         self.pooling = nn.AdaptiveAvgPool2d(1)
         self.flatten = nn.Flatten()
         self.dropout = nn.Dropout(0.1)
@@ -346,6 +351,7 @@ class FPNSwin(BaseModel):
         resolution_level: int = 2,
         mask_weight: float = 0.5,
         dropout_rate: float = 0.1,
+        pos_emb: bool = False,
         device="cuda",
     ) -> None:
         super(FPNSwin, self).__init__()
@@ -356,11 +362,66 @@ class FPNSwin(BaseModel):
         self.depth_backbone = SwinModel.from_pretrained(pretrained_model)
         self.rgb_fpn = FeaturePyramidNetwork(channel_list, hidden_dim)
         self.depth_fpn = FeaturePyramidNetwork(channel_list, hidden_dim)
-        self.attention = SelfAttention(hidden_dim)
+        self.pos_emb = pos_emb
+        self.pool_hid = True
+        self.attention = Attention(hidden_dim)
         self.pooling = nn.AdaptiveAvgPool2d(1)
         self.flatten = nn.Flatten()
         self.dropout = nn.Dropout(dropout_rate)
         self.regressor = regressor
+
+    def mask(
+        self, feats_hid: tuple[torch.FloatTensor], mask: torch.Tensor
+    ) -> dict[str, torch.Tensor]:
+        feats_dict = {}
+        for i, hid in enumerate(feats_hid[:-1]):
+            m = f.adaptive_avg_pool2d(
+                mask.float(), (hid.shape[-2], hid.shape[-1])
+            ).unsqueeze(1)
+            m = torch.where(m.bool(), m, self.mask_weight)
+            feats_dict[str(i)] = hid * m
+        return feats_dict
+
+    def resize(
+        self,
+        rgb_hids: dict[str, torch.Tensor],
+        d_hids: dict[str, torch.Tensor],
+    ) -> torch.Tensor:
+        _, _, fin_res_h, fin_res_w = rgb_hids[self.resolution_level].shape
+        hidden_states = {}
+        for (rgb_k, rgb_hid), (d_k, d_hid) in zip(rgb_hids.items(), d_hids.items()):
+            if rgb_hid.shape[-1] > fin_res_w:
+                rgb_hids[rgb_k] = f.adaptive_avg_pool2d(rgb_hid, (fin_res_h, fin_res_w))
+            else:
+                rgb_hids[rgb_k] = f.interpolate(rgb_hid, (fin_res_h, fin_res_w))
+            if d_hid.shape[-1] > fin_res_w:
+                d_hids[d_k] = f.adaptive_avg_pool2d(d_hid, (fin_res_h, fin_res_w))
+            else:
+                d_hids[d_k] = f.interpolate(d_hid, (fin_res_h, fin_res_w))
+            hidden_states[rgb_k] = rgb_hids[rgb_k] + d_hids[d_k]
+        hidden_states = torch.stack([emb for emb in hidden_states.values()])
+        return hidden_states
+
+    def pos_emb_3d(self, hidden_states: torch.Tensor) -> torch.Tensor:
+        hidden_states = rearrange(hidden_states, "n b c h w -> b n h w c")
+        _, n, h, w, c = hidden_states.shape
+        pos_emb = get_pos_embed_3d((n, h, w), c).to(hidden_states.device)
+        hidden_states = hidden_states + pos_emb
+        hidden_states = rearrange(hidden_states, "b n h w c -> n b c h w")
+        return hidden_states
+
+    def pool_attn(self, hidden_states: torch.Tensor) -> torch.Tensor:
+        n, b, c, h, w = hidden_states.shape
+        hidden_states_ = hidden_states.mean(0)
+        hidden_states_ = rearrange(hidden_states_, "b c h w -> b (h w) c")
+        hidden_states_ = self.attention.forward(hidden_states_)
+        hidden_states_ = rearrange(hidden_states_, "b (h w) c -> b c h w", h=h)
+        hidden_states = hidden_states + hidden_states_.unsqueeze(0)
+        return hidden_states
+
+    def cross_attn(self, hidden_states: torch.Tensor) -> torch.Tensor:
+        # mock implementation
+        return self.pool_attn(hidden_states)
 
     def forward(
         self,
@@ -380,71 +441,66 @@ class FPNSwin(BaseModel):
         )
         assert isinstance(rgb_features, ModelOutput)
         assert isinstance(depth_features, ModelOutput)
-        rgb_features_hid = rgb_features.hidden_states
-        depth_features_hid = depth_features.hidden_states
+        rgb_features_hid = rgb_features.reshaped_hidden_states
+        depth_features_hid = depth_features.reshaped_hidden_states
         assert isinstance(rgb_features_hid, tuple)
         assert isinstance(depth_features_hid, tuple)
-        rgb_features_dict = {}
-        for i, hid in enumerate(rgb_features_hid[:-1]):
-            hid = rearrange(hid, "b (h w) c -> b c h w", h=H // (2 ** (i + 2)))
-            m = f.adaptive_avg_pool2d(
-                mask.float(), (hid.shape[-2], hid.shape[-1])
-            ).unsqueeze(1)
-            m = torch.where(m.bool(), m, self.mask_weight)
-            rgb_features_dict[str(i)] = hid * m
-        depth_features_dict = {}
-        for i, hid in enumerate(depth_features_hid[:-1]):
-            hid = rearrange(hid, "b (h w) c -> b c h w", h=H // (2 ** (i + 2)))
-            m = f.adaptive_avg_pool2d(
-                mask.float(), (hid.shape[-2], hid.shape[-1])
-            ).unsqueeze(1)
-            m = torch.where(m.bool(), m, self.mask_weight)
-            depth_features_dict[str(i)] = hid * m
+        rgb_features_dict = self.mask(rgb_features_hid, mask)
+        depth_features_dict = self.mask(depth_features_hid, mask)
         rgb_hidden_states = self.rgb_fpn.forward(rgb_features_dict)
         depth_hidden_states = self.depth_fpn.forward(depth_features_dict)
-        _, _, fin_res_height, fin_res_width = rgb_hidden_states[
-            self.resolution_level
-        ].shape
-        hidden_states = {}
-        for (rgb_key, rgb_hid), (depth_key, depth_hid) in zip(
-            rgb_hidden_states.items(), depth_hidden_states.items()
-        ):
-            if rgb_hid.shape[-1] > fin_res_width:
-                rgb_hidden_states[rgb_key] = f.adaptive_avg_pool2d(
-                    rgb_hid, (fin_res_height, fin_res_width)
-                )
-            else:
-                rgb_hidden_states[rgb_key] = f.interpolate(
-                    rgb_hid, (fin_res_height, fin_res_width)
-                )
-            if depth_hid.shape[-1] > fin_res_width:
-                depth_hidden_states[depth_key] = f.adaptive_avg_pool2d(
-                    depth_hid, (fin_res_height, fin_res_width)
-                )
-            else:
-                depth_hidden_states[depth_key] = f.interpolate(
-                    depth_hid, (fin_res_height, fin_res_width)
-                )
-            hidden_states[rgb_key] = (
-                rgb_hidden_states[rgb_key] + depth_hidden_states[depth_key]
-            )
-        hidden_states = torch.stack([emb for emb in hidden_states.values()])
-        if not skip_attn:
-            pooled_hidden = hidden_states.mean(0)
-            pooled_hidden = rearrange(
-                pooled_hidden, "b c h w -> b (h w) c", h=fin_res_height
-            )
-            pooled_hidden = self.attention.forward(pooled_hidden)
-            pooled_hidden = rearrange(
-                pooled_hidden, "b (h w) c -> b c h w", h=fin_res_height
-            )
-            hidden_states = hidden_states + pooled_hidden.unsqueeze(0)
-        hidden_states = rearrange(hidden_states, "n b c h w -> b (n c) h w", b=B)
+        hidden_states = self.resize(rgb_hidden_states, depth_hidden_states)
+
+        if self.pos_emb:
+            # 3dposition embedding
+            hidden_states = self.pos_emb_3d(hidden_states)
+        if not skip_attn and self.pool_hid:
+            hidden_states = self.pool_attn(hidden_states)
+        elif not skip_attn:
+            hidden_states = self.cross_attn(hidden_states)
+        hidden_states = rearrange(hidden_states, "n b c h w -> b (n c) h w")
         emb = self.pooling.forward(hidden_states)
         emb = self.flatten.forward(emb)
         emb = self.dropout.forward(emb)
         out = self.regressor(emb, **kwargs)
         return out
+
+
+class FPNCrossSwin(FPNSwin):
+    def __init__(
+        self,
+        hidden_dim: int,
+        num_layers: int,
+        num_heads: int,
+        mlp_ratio: float,
+        pretrained_model: str = "microsoft/swin-tiny-patch4-window7-224",
+        regressor: BaseRegressor = Regressor(3072, 3072),
+        resolution_level: int = 2,
+        mask_weight: float = 0.8,
+        dropout_rate: float = 0.1,
+        pos_emb: bool = True,
+        device="cuda",
+    ) -> None:
+        super(FPNCrossSwin, self).__init__(
+            hidden_dim,
+            pretrained_model,
+            regressor,
+            resolution_level,
+            mask_weight,
+            dropout_rate,
+            pos_emb,
+            device,
+        )
+        self.pool_hid = False
+        self.decoder = CrossAttentionDecoder(
+            hidden_dim, num_layers, num_heads, mlp_ratio
+        )
+
+    def cross_attn(self, hidden_states: torch.Tensor) -> torch.Tensor:
+        hidden_states = rearrange(hidden_states, " n b c h w -> b n h w c")
+        hidden_states = self.decoder(hidden_states)
+        hidden_states = rearrange(hidden_states, "b n h w c -> n b c h w")
+        return hidden_states
 
 
 def get_model(config: CN, device: torch.device) -> BaseModel:
@@ -482,6 +538,17 @@ def get_model(config: CN, device: torch.device) -> BaseModel:
                 mask_weight=mask_weight,
                 dropout_rate=dropout_rate,
             )
+        elif mod == "cross-swin":
+            model = FPNCrossSwin(
+                768,
+                config.MODEL.DECODER.NUM_LAYERS,
+                config.MODEL.DECODER.NUM_HEADS,
+                config.MODEL.DECODER.MLP_RATIO,
+                pretrained_model,
+                regressor=Regressor(3072, 3072),
+                mask_weight=mask_weight,
+                dropout_rate=dropout_rate,
+            )
         elif mod == "openseed":
             model = FPNOpenSeeD(
                 512,
@@ -500,6 +567,17 @@ def get_model(config: CN, device: torch.device) -> BaseModel:
                 512,
                 pretrained_model,
                 regressor=RegressorIngrs(2048, 2048),
+                mask_weight=mask_weight,
+                dropout_rate=dropout_rate,
+            )
+        elif mod == "cross-swin":
+            model = FPNCrossSwin(
+                768,
+                config.MODEL.DECODER.NUM_LAYERS,
+                config.MODEL.DECODER.NUM_HEADS,
+                config.MODEL.DECODER.MLP_RATIO,
+                pretrained_model,
+                regressor=RegressorIngrs(3072, 3072),
                 mask_weight=mask_weight,
                 dropout_rate=dropout_rate,
             )

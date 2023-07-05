@@ -37,6 +37,12 @@ _C.MODEL.PRETRAINED = "inception_resnet_v2"
 _C.MODEL.MASK_WEIGHT = 0.5
 _C.MODEL.DROPOUT_RATE = 0.1
 
+# decoder
+_C.MODEL.DECODER = CN()
+_C.MODEL.DECODER.NUM_HEADS = 8
+_C.MODEL.DECODER.NUM_LAYERS = 4
+_C.MODEL.DECODER.MLP_RATIO = 4
+
 # -----------------------------------------------------------------------------
 # train
 # -----------------------------------------------------------------------------
