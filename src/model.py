@@ -372,7 +372,9 @@ class FPNSwin(BaseModel):
         self.regressor = regressor
 
     def mask(
-        self, feats_hid: dict[str, torch.FloatTensor], mask: torch.Tensor
+        self,
+        feats_hid: dict[str, torch.Tensor] | dict[str, torch.FloatTensor],
+        mask: torch.Tensor,
     ) -> dict[str, torch.Tensor]:
         if len(mask.shape) > 4 or len(mask.shape) <= 2:
             raise ValueError(f"Invalid mask shape: {mask.shape}")
@@ -454,10 +456,10 @@ class FPNSwin(BaseModel):
             rgb_hidden_states = self.rgb_fpn.forward(rgb_features_dict)
             d_hidden_states = self.depth_fpn.forward(d_features_dict)
         else:
-            rgb_hidden_states = self.rgb_fpn.forward(rgb_features_dict)  # type: ignore
-            d_hidden_states = self.depth_fpn.forward(d_features_dict)  # type: ignore
-            rgb_features_dict = self.mask(rgb_features_dict, mask)
-            d_features_dict = self.mask(d_features_dict, mask)
+            rgb_features_dict = self.rgb_fpn.forward(rgb_features_dict)  # type: ignore
+            d_features_dict = self.depth_fpn.forward(d_features_dict)  # type: ignore
+            rgb_hidden_states = self.mask(rgb_features_dict, mask)
+            d_hidden_states = self.mask(d_features_dict, mask)
         hidden_states = self.resize(rgb_hidden_states, d_hidden_states)
 
         if self.pos_emb:
@@ -520,7 +522,7 @@ class FPNCrossSwinMultiMask(FPNCrossSwin):
         num_heads: int,
         mlp_ratio: float,
         pretrained_model: str = "microsoft/swin-tiny-patch4-window7-224",
-        regressor: BaseRegressor = Regressor(3072, 3072),
+        regressor: BaseRegressor = Regressor(3120, 3120),
         resolution_level: int = 2,
         mask_weight: float = 0.8,
         dropout_rate: float = 0.1,
@@ -542,25 +544,28 @@ class FPNCrossSwinMultiMask(FPNCrossSwin):
             fpn_after_mask,
             device,
         )
+        assert mask_dim % 6 == 0
         self.mask_dim = mask_dim
         self.decoder = CrossAttentionDecoder(
             hidden_dim + mask_dim, num_layers, num_heads, mlp_ratio
         )
 
     def mask(
-        self, feats_hid: dict[str, torch.FloatTensor | torch.Tensor], mask: torch.Tensor
+        self,
+        feats_hid: dict[str, torch.FloatTensor] | dict[str, torch.Tensor],
+        mask: torch.Tensor,
     ) -> dict[str, torch.Tensor]:
+        assert (
+            mask.shape[1] >= self.mask_dim
+        ), f"mask shape[1]: {mask.shape[1]} less than mask_dim"
         if len(mask.shape) > 4 or len(mask.shape) <= 2:
             raise ValueError(f"Invalid mask shape: {mask.shape}")
         if len(mask.shape) == 3:
             mask = mask.unsqueeze(1)
         feats_dict = {}
         for i, hid in feats_hid.items():
-            m = f.adaptive_avg_pool2d(
-                mask.float(), (hid.shape[-2], hid.shape[-1])
-            ).unsqueeze(1)
-            m = torch.where(m.bool(), m, self.mask_weight)
-            feats_dict[i] = hid * m
+            m = f.adaptive_avg_pool2d(mask.float(), (hid.shape[-2], hid.shape[-1]))
+            feats_dict[i] = torch.cat([hid, m[:, : self.mask_dim]], dim=1)
         return feats_dict
 
 
@@ -568,9 +573,6 @@ def get_model(config: CN, device: torch.device) -> BaseModel:
     mod = config.MODEL.NAME
     pretrained_model = config.MODEL.PRETRAINED
     loss = config.TRAIN.LOSS
-    # layers = config.TRAIN.LAYERS
-    # finetune = config.TRAIN.FINETUNE
-    mask_weight = config.MODEL.MASK_WEIGHT
     dropout_rate = config.MODEL.DROPOUT_RATE
     if loss == "multi":
         if mod == "inceptionv2":
@@ -596,7 +598,7 @@ def get_model(config: CN, device: torch.device) -> BaseModel:
                 512,
                 pretrained_model,
                 regressor=Regressor(2048, 2048, dropout_rate=dropout_rate),
-                mask_weight=mask_weight,
+                mask_weight=config.MODEL.MASK_WEIGHT,
                 dropout_rate=dropout_rate,
             )
         elif mod == "cross-swin":
@@ -607,14 +609,27 @@ def get_model(config: CN, device: torch.device) -> BaseModel:
                 config.MODEL.DECODER.MLP_RATIO,
                 pretrained_model,
                 regressor=Regressor(3072, 3072),
-                mask_weight=mask_weight,
+                mask_weight=config.MODEL.MASK_WEIGHT,
+                dropout_rate=dropout_rate,
+            )
+        elif mod == "cross-swin-multi-mask":
+            regressor_dim = 4 * (768 + config.MODEL.MASK_DIM)
+            model = FPNCrossSwinMultiMask(
+                768,
+                config.MODEL.MASK_DIM,
+                config.MODEL.DECODER.NUM_LAYERS,
+                config.MODEL.DECODER.NUM_HEADS,
+                config.MODEL.DECODER.MLP_RATIO,
+                pretrained_model,
+                regressor=Regressor(regressor_dim, regressor_dim),
+                mask_weight=config.MODEL.MASK_WEIGHT,
                 dropout_rate=dropout_rate,
             )
         elif mod == "openseed":
             model = FPNOpenSeeD(
                 512,
                 regressor=Regressor(2048, 2048, dropout_rate=dropout_rate),
-                mask_weight=mask_weight,
+                mask_weight=config.MODEL.MASK_WEIGHT,
             )
         else:
             raise ValueError(f"Unkown model and loss: {mod} and {loss}")
@@ -628,7 +643,7 @@ def get_model(config: CN, device: torch.device) -> BaseModel:
                 512,
                 pretrained_model,
                 regressor=RegressorIngrs(2048, 2048),
-                mask_weight=mask_weight,
+                mask_weight=config.MODEL.MASK_WEIGHT,
                 dropout_rate=dropout_rate,
             )
         elif mod == "cross-swin":
@@ -639,13 +654,24 @@ def get_model(config: CN, device: torch.device) -> BaseModel:
                 config.MODEL.DECODER.MLP_RATIO,
                 pretrained_model,
                 regressor=RegressorIngrs(3072, 3072),
-                mask_weight=mask_weight,
+                mask_weight=config.MODEL.MASK_WEIGHT,
+                dropout_rate=dropout_rate,
+            )
+        elif mod == "cross-swin-multi-mask":
+            regressor_dim = 4 * (768 + config.MODEL.MASK_DIM)
+            model = FPNCrossSwinMultiMask(
+                768,
+                config.MODEL.MASK_DIM,
+                config.MODEL.DECODER.NUM_LAYERS,
+                config.MODEL.DECODER.NUM_HEADS,
+                config.MODEL.DECODER.MLP_RATIO,
+                pretrained_model,
+                regressor=Regressor(regressor_dim, regressor_dim),
+                mask_weight=config.MODEL.MASK_WEIGHT,
                 dropout_rate=dropout_rate,
             )
         else:
             raise ValueError(f"Unkown model and loss: {mod} and {loss}")
     else:
         raise ValueError(f"Unkown model and loss: {mod} and {loss}")
-
-    # model.backbone.requires_grad_(False)
     return model

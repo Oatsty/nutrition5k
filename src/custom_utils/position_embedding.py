@@ -16,7 +16,7 @@ def get_pos_embed_1d(n_queries: int, emb_dim: int) -> torch.Tensor:
 
 
 def get_pos_embed_3d(query_shape: tuple[int, int, int], emb_dim: int) -> torch.Tensor:
-    assert emb_dim % 3 == 0
+    assert emb_dim % 3 == 0, f"invalid embedding dimension: {emb_dim}"
     hid_dim = emb_dim // 3
     pos_emb_list = []
     for i, n_queries in enumerate(query_shape):

@@ -35,6 +35,7 @@ _C.MODEL = CN()
 _C.MODEL.NAME = "inceptionv2"
 _C.MODEL.PRETRAINED = "inception_resnet_v2"
 _C.MODEL.MASK_WEIGHT = 0.5
+_C.MODEL.MASK_DIM = 12
 _C.MODEL.DROPOUT_RATE = 0.1
 
 # decoder
