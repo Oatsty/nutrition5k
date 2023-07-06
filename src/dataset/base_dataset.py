@@ -73,11 +73,19 @@ class BaseDataset(Dataset):
         transform: Optional[transforms.Normalize] = None,
         transform_depth: Optional[transforms.Compose] = None,
         normalize_depth: Optional[transforms.Compose] = None,
+        rotate_flip: bool = True,
+        w_depth: bool = True,
+        w_mask: bool = True,
+        w_mask_all: bool = True,
     ) -> None:
         super(BaseDataset, self).__init__()
         self.imgs_dir = imgs_dir
         self.metadatas_path = metadatas_path
         self.splits = splits
+        self.rotate_flip = rotate_flip
+        self.w_depth = w_depth
+        self.w_mask = w_mask
+        self.w_mask_all = w_mask_all
         self.mean_metadata = Metadata("mean", 255.0, 218.0, 12.7, 19.3, 18.1)
         self.std_metadata = Metadata("std", 221.0, 163.0, 13.4, 22.3, 20.2)
         self.metadatas_dict = {}

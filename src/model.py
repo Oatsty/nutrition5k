@@ -352,18 +352,19 @@ class FPNSwin(BaseModel):
         mask_weight: float = 0.5,
         dropout_rate: float = 0.1,
         pos_emb: bool = False,
+        fpn_after_mask: bool = True,
         device="cuda",
     ) -> None:
         super(FPNSwin, self).__init__()
         channel_list = [96, 192, 384, 768]
         self.resolution_level = str(resolution_level)
         self.mask_weight = mask_weight
+        self.pos_emb = pos_emb
+        self.fpn_after_mask = fpn_after_mask
         self.rgb_backbone = SwinModel.from_pretrained(pretrained_model)
         self.depth_backbone = SwinModel.from_pretrained(pretrained_model)
         self.rgb_fpn = FeaturePyramidNetwork(channel_list, hidden_dim)
         self.depth_fpn = FeaturePyramidNetwork(channel_list, hidden_dim)
-        self.pos_emb = pos_emb
-        self.pool_hid = True
         self.attention = Attention(hidden_dim)
         self.pooling = nn.AdaptiveAvgPool2d(1)
         self.flatten = nn.Flatten()
@@ -371,15 +372,19 @@ class FPNSwin(BaseModel):
         self.regressor = regressor
 
     def mask(
-        self, feats_hid: tuple[torch.FloatTensor], mask: torch.Tensor
+        self, feats_hid: dict[str, torch.FloatTensor], mask: torch.Tensor
     ) -> dict[str, torch.Tensor]:
+        if len(mask.shape) > 4 or len(mask.shape) <= 2:
+            raise ValueError(f"Invalid mask shape: {mask.shape}")
+        if len(mask.shape) == 4:
+            mask = mask.mean(1)
         feats_dict = {}
-        for i, hid in enumerate(feats_hid[:-1]):
+        for i, hid in feats_hid.items():
             m = f.adaptive_avg_pool2d(
                 mask.float(), (hid.shape[-2], hid.shape[-1])
             ).unsqueeze(1)
             m = torch.where(m.bool(), m, self.mask_weight)
-            feats_dict[str(i)] = hid * m
+            feats_dict[i] = hid * m
         return feats_dict
 
     def resize(
@@ -410,7 +415,7 @@ class FPNSwin(BaseModel):
         hidden_states = rearrange(hidden_states, "b n h w c -> n b c h w")
         return hidden_states
 
-    def pool_attn(self, hidden_states: torch.Tensor) -> torch.Tensor:
+    def attn(self, hidden_states: torch.Tensor) -> torch.Tensor:
         n, b, c, h, w = hidden_states.shape
         hidden_states_ = hidden_states.mean(0)
         hidden_states_ = rearrange(hidden_states_, "b c h w -> b (h w) c")
@@ -418,10 +423,6 @@ class FPNSwin(BaseModel):
         hidden_states_ = rearrange(hidden_states_, "b (h w) c -> b c h w", h=h)
         hidden_states = hidden_states + hidden_states_.unsqueeze(0)
         return hidden_states
-
-    def cross_attn(self, hidden_states: torch.Tensor) -> torch.Tensor:
-        # mock implementation
-        return self.pool_attn(hidden_states)
 
     def forward(
         self,
@@ -436,28 +437,34 @@ class FPNSwin(BaseModel):
         assert isinstance(self.rgb_backbone, SwinModel)
         assert isinstance(self.depth_backbone, SwinModel)
         rgb_features = self.rgb_backbone.forward(rgb_img, output_hidden_states=True)  # type: ignore
-        depth_features = self.depth_backbone.forward(
+        d_features = self.depth_backbone.forward(
             depth_img, output_hidden_states=True  # type: ignore
         )
         assert isinstance(rgb_features, ModelOutput)
-        assert isinstance(depth_features, ModelOutput)
+        assert isinstance(d_features, ModelOutput)
         rgb_features_hid = rgb_features.reshaped_hidden_states
-        depth_features_hid = depth_features.reshaped_hidden_states
+        d_features_hid = d_features.reshaped_hidden_states
         assert isinstance(rgb_features_hid, tuple)
-        assert isinstance(depth_features_hid, tuple)
-        rgb_features_dict = self.mask(rgb_features_hid, mask)
-        depth_features_dict = self.mask(depth_features_hid, mask)
-        rgb_hidden_states = self.rgb_fpn.forward(rgb_features_dict)
-        depth_hidden_states = self.depth_fpn.forward(depth_features_dict)
-        hidden_states = self.resize(rgb_hidden_states, depth_hidden_states)
+        assert isinstance(d_features_hid, tuple)
+        rgb_features_dict = {str(i): hid for i, hid in enumerate(rgb_features_hid[:-1])}
+        d_features_dict = {str(i): hid for i, hid in enumerate(d_features_hid[:-1])}
+        if self.fpn_after_mask:
+            rgb_features_dict = self.mask(rgb_features_dict, mask)
+            d_features_dict = self.mask(d_features_dict, mask)
+            rgb_hidden_states = self.rgb_fpn.forward(rgb_features_dict)
+            d_hidden_states = self.depth_fpn.forward(d_features_dict)
+        else:
+            rgb_hidden_states = self.rgb_fpn.forward(rgb_features_dict)  # type: ignore
+            d_hidden_states = self.depth_fpn.forward(d_features_dict)  # type: ignore
+            rgb_features_dict = self.mask(rgb_features_dict, mask)
+            d_features_dict = self.mask(d_features_dict, mask)
+        hidden_states = self.resize(rgb_hidden_states, d_hidden_states)
 
         if self.pos_emb:
             # 3dposition embedding
             hidden_states = self.pos_emb_3d(hidden_states)
-        if not skip_attn and self.pool_hid:
-            hidden_states = self.pool_attn(hidden_states)
-        elif not skip_attn:
-            hidden_states = self.cross_attn(hidden_states)
+        if not skip_attn:
+            hidden_states = self.attn(hidden_states)
         hidden_states = rearrange(hidden_states, "n b c h w -> b (n c) h w")
         emb = self.pooling.forward(hidden_states)
         emb = self.flatten.forward(emb)
@@ -479,6 +486,7 @@ class FPNCrossSwin(FPNSwin):
         mask_weight: float = 0.8,
         dropout_rate: float = 0.1,
         pos_emb: bool = True,
+        fpn_after_mask: bool = True,
         device="cuda",
     ) -> None:
         super(FPNCrossSwin, self).__init__(
@@ -489,18 +497,71 @@ class FPNCrossSwin(FPNSwin):
             mask_weight,
             dropout_rate,
             pos_emb,
+            fpn_after_mask,
             device,
         )
-        self.pool_hid = False
         self.decoder = CrossAttentionDecoder(
             hidden_dim, num_layers, num_heads, mlp_ratio
         )
 
-    def cross_attn(self, hidden_states: torch.Tensor) -> torch.Tensor:
+    def attn(self, hidden_states: torch.Tensor) -> torch.Tensor:
         hidden_states = rearrange(hidden_states, " n b c h w -> b n h w c")
         hidden_states = self.decoder(hidden_states)
         hidden_states = rearrange(hidden_states, "b n h w c -> n b c h w")
         return hidden_states
+
+
+class FPNCrossSwinMultiMask(FPNCrossSwin):
+    def __init__(
+        self,
+        hidden_dim: int,
+        mask_dim: int,
+        num_layers: int,
+        num_heads: int,
+        mlp_ratio: float,
+        pretrained_model: str = "microsoft/swin-tiny-patch4-window7-224",
+        regressor: BaseRegressor = Regressor(3072, 3072),
+        resolution_level: int = 2,
+        mask_weight: float = 0.8,
+        dropout_rate: float = 0.1,
+        pos_emb: bool = True,
+        fpn_after_mask: bool = False,
+        device="cuda",
+    ) -> None:
+        super().__init__(
+            hidden_dim,
+            num_layers,
+            num_heads,
+            mlp_ratio,
+            pretrained_model,
+            regressor,
+            resolution_level,
+            mask_weight,
+            dropout_rate,
+            pos_emb,
+            fpn_after_mask,
+            device,
+        )
+        self.mask_dim = mask_dim
+        self.decoder = CrossAttentionDecoder(
+            hidden_dim + mask_dim, num_layers, num_heads, mlp_ratio
+        )
+
+    def mask(
+        self, feats_hid: dict[str, torch.FloatTensor | torch.Tensor], mask: torch.Tensor
+    ) -> dict[str, torch.Tensor]:
+        if len(mask.shape) > 4 or len(mask.shape) <= 2:
+            raise ValueError(f"Invalid mask shape: {mask.shape}")
+        if len(mask.shape) == 3:
+            mask = mask.unsqueeze(1)
+        feats_dict = {}
+        for i, hid in feats_hid.items():
+            m = f.adaptive_avg_pool2d(
+                mask.float(), (hid.shape[-2], hid.shape[-1])
+            ).unsqueeze(1)
+            m = torch.where(m.bool(), m, self.mask_weight)
+            feats_dict[i] = hid * m
+        return feats_dict
 
 
 def get_model(config: CN, device: torch.device) -> BaseModel:

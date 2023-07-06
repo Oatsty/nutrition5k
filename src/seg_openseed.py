@@ -54,7 +54,7 @@ class OpenSeeDSeg:
             outputs = self.model.forward(batch_inputs, "inst_seg")
         return outputs
 
-    def get_mask(self, img: torch.Tensor):
+    def get_mask(self, img: torch.Tensor, all_mask: bool = False, top: int = 20):
         outputs = self.seg(img)
         features = outputs["backbone_features"]
         mask_batch = []
@@ -62,8 +62,12 @@ class OpenSeeDSeg:
         for res in outputs["results"]:
             inst_seg = res["instances"]
             inst_seg_batch.append(inst_seg)
-            scores = inst_seg.scores
             masks = inst_seg.pred_masks
+            scores = inst_seg.scores
+            if all_mask:
+                masks = masks[scores.argsort(descending=True)]
+                mask_batch.append(masks[:top])
+                continue
             keep = scores > 0.1
             masks = masks[keep]
             if len(masks) == 0:

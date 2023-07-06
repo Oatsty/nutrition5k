@@ -12,7 +12,7 @@ MODEL:
   MASK_WEIGHT: 0.8
   NAME: swin
   PRETRAINED: microsoft/swin-tiny-patch4-window7-224
-SAVE_PATH:  models/test/test3.pt
+SAVE_PATH:  models/test/test4.pt
 TITLE:
 - test 4
 TRAIN:

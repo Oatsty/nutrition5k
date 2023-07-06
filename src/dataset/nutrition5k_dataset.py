@@ -18,18 +18,14 @@ class Nutrition5kDataset(BaseDataset):
         self.init_metadatas()
 
     @staticmethod
-    def transform_(rgb_img, depth_img, mask):
+    def transform_(imgs: dict[str, Any]) -> dict[str, torch.Tensor]:
         # rotate
         params = transforms.RandomRotation.get_params([-180, 180])
-        rgb_img = TF.rotate(rgb_img, params)
-        depth_img = TF.rotate(depth_img, params, fill=depth_img.max().item())
-        mask = TF.rotate(mask, params)
+        imgs = {k: TF.rotate(img, params) for k, img in imgs.items()}
 
         if np.random.rand() < 0.5:
-            rgb_img = TF.hflip(rgb_img)
-            depth_img = TF.hflip(depth_img)
-            mask = TF.hflip(mask)
-        return rgb_img, depth_img, mask
+            imgs = {k: TF.hflip(img) for k, img in imgs.items()}
+        return imgs
 
     def init_metadatas(self):
         mean_metadata = self.mean_metadata
@@ -69,28 +65,38 @@ class Nutrition5kDataset(BaseDataset):
             self.metadatas_dict[dish_id] = data_dict
 
     def __getitem__(self, index: int) -> dict[str, Any]:
+        metadata = self.metadatas_dict[self.splits[index]]
         img_dir = Path.joinpath(self.imgs_dir, self.splits[index])
         rgb_path = Path.joinpath(img_dir, "rgb.png")
         depth_path = Path.joinpath(img_dir, "depth_raw.png")
         mask_path = Path.joinpath(img_dir, "mask.pt")
-        rgb_img = Image.open(rgb_path)
-        depth_img = Image.open(depth_path)
-        mask = torch.load(mask_path)
-        rgb_img = self.transform(rgb_img)
-        depth_img = self.transform_depth(depth_img).float()  # type: ignore
-        depth_img = self.normalize_depth(depth_img)
-        mask = mask.unsqueeze(0)
-        rgb_img, depth_img, mask = self.transform_(rgb_img, depth_img, mask)
-        mask = mask.squeeze(0)
-        metadata = self.metadatas_dict[self.splits[index]]
+        mask_all_path = Path.joinpath(img_dir, "mask_all.pt")
         sample = {
-            "rgb_img": rgb_img,
-            "depth_img": depth_img,
-            "mask": mask,
             "metadata": metadata,
             "rgb_path": str(rgb_path),
             "depth_path": str(depth_path),
         }
+        imgs = {}
+        rgb_img = Image.open(rgb_path)
+        rgb_img = self.transform(rgb_img)
+        imgs["rgb_img"] = rgb_img
+        if self.w_depth:
+            depth_img = Image.open(depth_path)
+            depth_img = self.transform_depth(depth_img).float()  # type: ignore
+            depth_img = self.normalize_depth(depth_img)
+            imgs["depth_img"] = depth_img
+        if self.w_mask:
+            mask = torch.load(mask_path)
+            mask = mask.unsqueeze(0)
+            imgs["mask"] = mask
+        if self.w_mask_all:
+            imgs["mask_all"] = torch.load(mask_all_path)
+
+        if self.rotate_flip:
+            imgs = self.transform_(imgs)
+        if self.w_mask:
+            imgs["mask"] = imgs["mask"].squeeze(0)
+        sample.update(imgs)
         return sample
 
 
@@ -101,6 +107,7 @@ def make_dataset(
     splits_train_path: str = ".",
     splits_test_path: str = ".",
     unnormalized_int_tensor: bool = False,
+    **kwargs,
 ) -> dict[str, BaseDataset]:
     if isinstance(config, CN):
         imgs_dir_p = Path(config.DATA.IMGS_DIR)
@@ -161,6 +168,7 @@ def make_dataset(
         splits_train,
         transform=transform,
         normalize_depth=normalize_depth,
+        **kwargs,
     )
     test_dataset = Nutrition5kDataset(
         imgs_dir_p,
@@ -168,5 +176,6 @@ def make_dataset(
         splits_test,
         transform=transform,
         normalize_depth=normalize_depth,
+        **kwargs,
     )
     return {"train": train_dataset, "test": test_dataset}
