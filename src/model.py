@@ -6,7 +6,7 @@ import torch.nn.functional as f
 from custom_utils import get_pos_embed_nd
 from einops import rearrange
 from seg_openseed import OpenSeeDSeg
-from timm.models.vision_transformer import Attention
+from timm.models.vision_transformer import Attention, Block
 from torch import nn
 from torchvision.ops import FeaturePyramidNetwork
 from transformers.models.resnet.modeling_resnet import ResNetModel
@@ -97,6 +97,21 @@ class RegressorIngrs(BaseRegressor):
         out = {d: self.regress[d](x) for d in ["cal", "mass", "fat", "carb", "protein"]}
         out["ingrs"] = out_ingrs
         return out
+
+
+class AttentionDecoder(nn.Module):
+    def __init__(
+        self, model_dim: int, num_layers: int, num_heads: int, mlp_ratio: float
+    ) -> None:
+        super(AttentionDecoder, self).__init__()
+        self.blocks = nn.ModuleList(
+            [Block(model_dim, num_heads, mlp_ratio) for _ in range(num_layers)]
+        )
+
+    def forward(self, x) -> torch.Tensor:
+        for block in self.blocks:
+            x = block(x)
+        return x
 
 
 class CrossAttentionBlock(nn.Module):
@@ -621,6 +636,50 @@ class FPNCrossSwinMultiMask(FPNCrossSwin):
         return feats_dict
 
 
+class FPNNoCrossSwinMultiMask(FPNCrossSwinMultiMask):
+    def __init__(
+        self,
+        hidden_dim: int,
+        mask_dim: int,
+        num_layers: int,
+        num_heads: int,
+        mlp_ratio: float,
+        pretrained_model: str = "microsoft/swin-tiny-patch4-window7-224",
+        regressor: BaseRegressor = Regressor(3120, 3120),
+        resolution_level: int = 2,
+        mask_weight: float = 0.8,
+        dropout_rate: float = 0.1,
+        pos_emb: bool = True,
+        fpn_after_mask: bool = False,
+        device="cuda",
+    ) -> None:
+        super().__init__(
+            hidden_dim,
+            mask_dim,
+            num_layers,
+            num_heads,
+            mlp_ratio,
+            pretrained_model,
+            regressor,
+            resolution_level,
+            mask_weight,
+            dropout_rate,
+            pos_emb,
+            fpn_after_mask,
+            device,
+        )
+        self.decoder = AttentionDecoder(
+            hidden_dim + mask_dim, num_layers, num_heads, mlp_ratio
+        )
+
+    def attn(self, hidden_states: torch.Tensor) -> torch.Tensor:
+        n, b, c, h, w = hidden_states.shape
+        hidden_states = rearrange(hidden_states, " n b c h w -> b (n h w) c")
+        hidden_states = self.decoder(hidden_states)
+        hidden_states = rearrange(hidden_states, "b (n h w) c -> n b c h w", n=n, h=h)
+        return hidden_states
+
+
 class FPNTripleCrossSwin(FPNCrossSwin):
     def __init__(
         self,
@@ -769,6 +828,19 @@ def get_model(config: CN, device: torch.device) -> BaseModel:
                 mask_weight=config.MODEL.MASK_WEIGHT,
                 dropout_rate=dropout_rate,
             )
+        elif mod == "no-cross-swin":
+            regressor_dim = 4 * (768 + config.MODEL.MASK_DIM)
+            model = FPNNoCrossSwinMultiMask(
+                768,
+                config.MODEL.MASK_DIM,
+                config.MODEL.DECODER.NUM_LAYERS,
+                config.MODEL.DECODER.NUM_HEADS,
+                config.MODEL.DECODER.MLP_RATIO,
+                pretrained_model,
+                regressor=Regressor(regressor_dim, regressor_dim),
+                mask_weight=config.MODEL.MASK_WEIGHT,
+                dropout_rate=dropout_rate,
+            )
         elif mod == "triple-cross-swin":
             model = FPNTripleCrossSwin(
                 768,
@@ -810,6 +882,19 @@ def get_model(config: CN, device: torch.device) -> BaseModel:
                 config.MODEL.DECODER.MLP_RATIO,
                 pretrained_model,
                 regressor=RegressorIngrs(3072, 3072),
+                mask_weight=config.MODEL.MASK_WEIGHT,
+                dropout_rate=dropout_rate,
+            )
+        elif mod == "no-cross-swin":
+            regressor_dim = 4 * (768 + config.MODEL.MASK_DIM)
+            model = FPNNoCrossSwinMultiMask(
+                768,
+                config.MODEL.MASK_DIM,
+                config.MODEL.DECODER.NUM_LAYERS,
+                config.MODEL.DECODER.NUM_HEADS,
+                config.MODEL.DECODER.MLP_RATIO,
+                pretrained_model,
+                regressor=RegressorIngrs(regressor_dim, regressor_dim),
                 mask_weight=config.MODEL.MASK_WEIGHT,
                 dropout_rate=dropout_rate,
             )

@@ -15,7 +15,7 @@ MODEL:
   PRETRAINED: microsoft/swin-tiny-patch4-window7-224
   DECODER:
     NUM_LAYERS: 4
-    MLP_RATIO: 4
+    MLP_RATIO: 4.0
     NUM_HEADS: 12
 SAVE_PATH: models/triple-cross-swin/base_150ep.pt
 TITLE:
