@@ -9,13 +9,13 @@ EVAL:
   WIDTH: 640
 MODEL:
   DROPOUT_RATE: 0.1
-  MASK_DIM: 2
+  MASK_DIM: 1
   MASK_WEIGHT: 0.8
   NAME: triple-cross-swin
   PRETRAINED: microsoft/swin-tiny-patch4-window7-224
   DECODER:
     NUM_LAYERS: 1
-    MLP_RATIO: 1
+    MLP_RATIO: 0.25
     NUM_HEADS: 12
 SAVE_PATH: models/test/test7.pt
 TITLE:
