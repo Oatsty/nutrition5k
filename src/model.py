@@ -3,7 +3,15 @@ from abc import ABC, abstractmethod
 import timm
 import torch
 import torch.nn.functional as f
-from custom_utils import get_pos_embed_nd
+from custom_utils.fpn_swin_utils import (
+    AddPosEmb3D,
+    AddPosEmb4D,
+    AppendMask,
+    DefaultMask,
+    ProductMask,
+    Resize2D,
+    Resize3D,
+)
 from einops import rearrange
 from seg_openseed import OpenSeeDSeg
 from timm.models.vision_transformer import Attention, Block
@@ -409,7 +417,7 @@ class FPNOpenSeeD(BaseModel):
         return out
 
 
-class FPNSwin(BaseModel):
+class FPNSwinBase(BaseModel):
     def __init__(
         self,
         hidden_dim: int,
@@ -422,10 +430,8 @@ class FPNSwin(BaseModel):
         fpn_after_mask: bool = True,
         device="cuda",
     ) -> None:
-        super(FPNSwin, self).__init__()
+        super(FPNSwinBase, self).__init__()
         channel_list = [96, 192, 384, 768]
-        self.resolution_level = str(resolution_level)
-        self.mask_weight = mask_weight
         self.pos_emb = pos_emb
         self.fpn_after_mask = fpn_after_mask
         self.rgb_backbone = SwinModel.from_pretrained(pretrained_model)
@@ -437,52 +443,9 @@ class FPNSwin(BaseModel):
         self.flatten = nn.Flatten()
         self.dropout = nn.Dropout(dropout_rate)
         self.regressor = regressor
-
-    def mask(
-        self,
-        feats_hid: dict[str, torch.Tensor] | dict[str, torch.FloatTensor],
-        mask: torch.Tensor,
-    ) -> dict[str, torch.Tensor]:
-        if len(mask.shape) > 4 or len(mask.shape) <= 2:
-            raise ValueError(f"Invalid mask shape: {mask.shape}")
-        if len(mask.shape) == 4:
-            mask = mask.mean(1)
-        feats_dict = {}
-        for i, hid in feats_hid.items():
-            m = f.adaptive_avg_pool2d(
-                mask.float(), (hid.shape[-2], hid.shape[-1])
-            ).unsqueeze(1)
-            m = torch.where(m.bool(), m, self.mask_weight)
-            feats_dict[i] = hid * m
-        return feats_dict
-
-    def resize(
-        self,
-        rgb_hids: dict[str, torch.Tensor],
-        d_hids: dict[str, torch.Tensor],
-    ) -> torch.Tensor:
-        _, _, fin_res_h, fin_res_w = rgb_hids[self.resolution_level].shape
-        hidden_states = {}
-        for (rgb_k, rgb_hid), (d_k, d_hid) in zip(rgb_hids.items(), d_hids.items()):
-            if rgb_hid.shape[-1] > fin_res_w:
-                rgb_hids[rgb_k] = f.adaptive_avg_pool2d(rgb_hid, (fin_res_h, fin_res_w))
-            else:
-                rgb_hids[rgb_k] = f.interpolate(rgb_hid, (fin_res_h, fin_res_w))
-            if d_hid.shape[-1] > fin_res_w:
-                d_hids[d_k] = f.adaptive_avg_pool2d(d_hid, (fin_res_h, fin_res_w))
-            else:
-                d_hids[d_k] = f.interpolate(d_hid, (fin_res_h, fin_res_w))
-            hidden_states[rgb_k] = rgb_hids[rgb_k] + d_hids[d_k]
-        hidden_states = torch.stack([emb for emb in hidden_states.values()])
-        return hidden_states
-
-    def add_pos_emb(self, hidden_states: torch.Tensor) -> torch.Tensor:
-        hidden_states = rearrange(hidden_states, "n b c h w -> b n h w c")
-        _, n, h, w, c = hidden_states.shape
-        pos_emb = get_pos_embed_nd(n, h, w, emb_dim=c).to(hidden_states.device)
-        hidden_states = hidden_states + pos_emb
-        hidden_states = rearrange(hidden_states, "b n h w c -> n b c h w")
-        return hidden_states
+        self.mask_fn = DefaultMask(mask_weight)
+        self.resize_fn = Resize2D(str(resolution_level))
+        self.add_pos_emb = AddPosEmb3D()
 
     def attn(self, hidden_states: torch.Tensor) -> torch.Tensor:
         n, b, c, h, w = hidden_states.shape
@@ -518,16 +481,16 @@ class FPNSwin(BaseModel):
         rgb_features_dict = {str(i): hid for i, hid in enumerate(rgb_features_hid[:-1])}
         d_features_dict = {str(i): hid for i, hid in enumerate(d_features_hid[:-1])}
         if self.fpn_after_mask:
-            rgb_features_dict = self.mask(rgb_features_dict, mask)
-            d_features_dict = self.mask(d_features_dict, mask)
+            rgb_features_dict = self.mask_fn(rgb_features_dict, mask)
+            d_features_dict = self.mask_fn(d_features_dict, mask)
             rgb_hidden_states = self.rgb_fpn.forward(rgb_features_dict)
             d_hidden_states = self.depth_fpn.forward(d_features_dict)
         else:
             rgb_features_dict = self.rgb_fpn.forward(rgb_features_dict)  # type: ignore
             d_features_dict = self.depth_fpn.forward(d_features_dict)  # type: ignore
-            rgb_hidden_states = self.mask(rgb_features_dict, mask)
-            d_hidden_states = self.mask(d_features_dict, mask)
-        hidden_states = self.resize(rgb_hidden_states, d_hidden_states)
+            rgb_hidden_states = self.mask_fn(rgb_features_dict, mask)
+            d_hidden_states = self.mask_fn(d_features_dict, mask)
+        hidden_states = self.resize_fn(rgb_hidden_states, d_hidden_states)
 
         if self.pos_emb:
             # 3dposition embedding
@@ -542,7 +505,33 @@ class FPNSwin(BaseModel):
         return out
 
 
-class FPNCrossSwin(FPNSwin):
+class FPNSwin(FPNSwinBase):
+    def __init__(
+        self,
+        hidden_dim: int,
+        pretrained_model: str = "microsoft/swin-tiny-patch4-window7-224",
+        regressor: BaseRegressor = Regressor(2048, 2048),
+        resolution_level: int = 2,
+        mask_weight: float = 0.8,
+        dropout_rate: float = 0.1,
+        pos_emb: bool = False,
+        fpn_after_mask: bool = True,
+        device="cuda",
+    ) -> None:
+        super().__init__(
+            hidden_dim,
+            pretrained_model,
+            regressor,
+            resolution_level,
+            mask_weight,
+            dropout_rate,
+            pos_emb,
+            fpn_after_mask,
+            device,
+        )
+
+
+class FPNCrossSwin(FPNSwinBase):
     def __init__(
         self,
         hidden_dim: int,
@@ -558,7 +547,7 @@ class FPNCrossSwin(FPNSwin):
         fpn_after_mask: bool = True,
         device="cuda",
     ) -> None:
-        super(FPNCrossSwin, self).__init__(
+        super().__init__(
             hidden_dim,
             pretrained_model,
             regressor,
@@ -580,7 +569,7 @@ class FPNCrossSwin(FPNSwin):
         return hidden_states
 
 
-class FPNCrossSwinMultiMask(FPNCrossSwin):
+class FPNCrossSwinMultiMask(FPNSwinBase):
     def __init__(
         self,
         hidden_dim: int,
@@ -599,9 +588,6 @@ class FPNCrossSwinMultiMask(FPNCrossSwin):
     ) -> None:
         super().__init__(
             hidden_dim,
-            num_layers,
-            num_heads,
-            mlp_ratio,
             pretrained_model,
             regressor,
             resolution_level,
@@ -612,31 +598,19 @@ class FPNCrossSwinMultiMask(FPNCrossSwin):
             device,
         )
         assert mask_dim % 6 == 0
-        self.mask_dim = mask_dim
         self.decoder = CrossAttentionDecoder(
             hidden_dim + mask_dim, num_layers, num_heads, mlp_ratio
         )
+        self.mask_fn = AppendMask(mask_weight, mask_dim)
 
-    def mask(
-        self,
-        feats_hid: dict[str, torch.FloatTensor] | dict[str, torch.Tensor],
-        mask: torch.Tensor,
-    ) -> dict[str, torch.Tensor]:
-        assert (
-            mask.shape[1] >= self.mask_dim
-        ), f"mask shape[1]: {mask.shape[1]} less than mask_dim"
-        if len(mask.shape) > 4 or len(mask.shape) <= 2:
-            raise ValueError(f"Invalid mask shape: {mask.shape}")
-        if len(mask.shape) == 3:
-            mask = mask.unsqueeze(1)
-        feats_dict = {}
-        for i, hid in feats_hid.items():
-            m = f.adaptive_avg_pool2d(mask.float(), (hid.shape[-2], hid.shape[-1]))
-            feats_dict[i] = torch.cat([hid, m[:, : self.mask_dim]], dim=1)
-        return feats_dict
+    def attn(self, hidden_states: torch.Tensor) -> torch.Tensor:
+        hidden_states = rearrange(hidden_states, " n b c h w -> b n h w c")
+        hidden_states = self.decoder(hidden_states)
+        hidden_states = rearrange(hidden_states, "b n h w c -> n b c h w")
+        return hidden_states
 
 
-class FPNNoCrossSwinMultiMask(FPNCrossSwinMultiMask):
+class FPNNoCrossSwinMultiMask(FPNSwinBase):
     def __init__(
         self,
         hidden_dim: int,
@@ -655,10 +629,6 @@ class FPNNoCrossSwinMultiMask(FPNCrossSwinMultiMask):
     ) -> None:
         super().__init__(
             hidden_dim,
-            mask_dim,
-            num_layers,
-            num_heads,
-            mlp_ratio,
             pretrained_model,
             regressor,
             resolution_level,
@@ -671,6 +641,7 @@ class FPNNoCrossSwinMultiMask(FPNCrossSwinMultiMask):
         self.decoder = AttentionDecoder(
             hidden_dim + mask_dim, num_layers, num_heads, mlp_ratio
         )
+        self.mask_fn = AppendMask(mask_weight, mask_dim)
 
     def attn(self, hidden_states: torch.Tensor) -> torch.Tensor:
         n, b, c, h, w = hidden_states.shape
@@ -680,7 +651,7 @@ class FPNNoCrossSwinMultiMask(FPNCrossSwinMultiMask):
         return hidden_states
 
 
-class FPNTripleCrossSwin(FPNCrossSwin):
+class FPNTripleCrossSwin(FPNSwinBase):
     def __init__(
         self,
         hidden_dim: int,
@@ -699,9 +670,6 @@ class FPNTripleCrossSwin(FPNCrossSwin):
     ) -> None:
         super().__init__(
             hidden_dim,
-            num_layers,
-            num_heads,
-            mlp_ratio,
             pretrained_model,
             regressor,
             resolution_level,
@@ -711,58 +679,12 @@ class FPNTripleCrossSwin(FPNCrossSwin):
             fpn_after_mask,
             device,
         )
-        self.mask_dim = mask_dim
         self.decoder = TripleCrossAttentionDecoder(
             hidden_dim, num_layers, num_heads, mlp_ratio
         )
-
-    def mask(
-        self,
-        feats_hid: dict[str, torch.FloatTensor] | dict[str, torch.Tensor],
-        mask: torch.Tensor,
-    ) -> dict[str, torch.Tensor]:
-        if len(mask.shape) > 4 or len(mask.shape) <= 2:
-            raise ValueError(f"Invalid mask shape: {mask.shape}")
-        if len(mask.shape) == 3:
-            mask = mask.unsqueeze(1)
-        feats_dict = {}
-        for i, hid in feats_hid.items():
-            m = f.adaptive_avg_pool2d(mask.float(), (hid.shape[-2], hid.shape[-1]))[
-                :, : self.mask_dim
-            ]
-            m = torch.where(m.bool(), m, self.mask_weight)
-            feats_dict[i] = torch.einsum("bchw, bmhw -> bmchw", hid, m)
-        return feats_dict
-
-    def resize(
-        self,
-        rgb_hids: dict[str, torch.Tensor],
-        d_hids: dict[str, torch.Tensor],
-    ) -> torch.Tensor:
-        _, _, C, fin_res_h, fin_res_w = rgb_hids[self.resolution_level].shape
-        hidden_states = {}
-        for (rgb_k, rgb_hid), (d_k, d_hid) in zip(rgb_hids.items(), d_hids.items()):
-            if rgb_hid.shape[-1] > fin_res_w:
-                rgb_hids[rgb_k] = f.adaptive_avg_pool3d(
-                    rgb_hid, (C, fin_res_h, fin_res_w)
-                )
-            else:
-                rgb_hids[rgb_k] = f.interpolate(rgb_hid, (C, fin_res_h, fin_res_w))
-            if d_hid.shape[-1] > fin_res_w:
-                d_hids[d_k] = f.adaptive_avg_pool3d(d_hid, (C, fin_res_h, fin_res_w))
-            else:
-                d_hids[d_k] = f.interpolate(d_hid, (C, fin_res_h, fin_res_w))
-            hidden_states[rgb_k] = rgb_hids[rgb_k] + d_hids[d_k]
-        hidden_states = torch.stack([emb for emb in hidden_states.values()])
-        return hidden_states
-
-    def add_pos_emb(self, hidden_states: torch.Tensor) -> torch.Tensor:
-        hidden_states = rearrange(hidden_states, "n b m c h w -> b n m h w c")
-        _, n, m, h, w, c = hidden_states.shape
-        pos_emb = get_pos_embed_nd(n, m, h, w, emb_dim=c).to(hidden_states.device)
-        hidden_states = hidden_states + pos_emb
-        hidden_states = rearrange(hidden_states, "b n m h w c -> n b m c h w")
-        return hidden_states
+        self.mask_fn = ProductMask(mask_weight, mask_dim)
+        self.resize_fn = Resize3D(str(resolution_level))
+        self.add_pos_emb = AddPosEmb4D()
 
     def attn(self, hidden_states: torch.Tensor) -> torch.Tensor:
         hidden_states = rearrange(hidden_states, " n b m c h w -> b n m h w c")
