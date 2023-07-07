@@ -15,9 +15,10 @@ def get_pos_embed_1d(n_queries: int, emb_dim: int) -> torch.Tensor:
     return pos_embed
 
 
-def get_pos_embed_3d(query_shape: tuple[int, int, int], emb_dim: int) -> torch.Tensor:
-    assert emb_dim % 3 == 0, f"invalid embedding dimension: {emb_dim}"
-    hid_dim = emb_dim // 3
+def get_pos_embed_nd(*query_shape: int, emb_dim: int) -> torch.Tensor:
+    query_dim = len(query_shape)
+    assert emb_dim % query_dim == 0, f"invalid embedding dimension: {emb_dim}"
+    hid_dim = emb_dim // query_dim
     pos_emb_list = []
     for i, n_queries in enumerate(query_shape):
         emb = torch.ones(n_queries, emb_dim)
@@ -25,5 +26,9 @@ def get_pos_embed_3d(query_shape: tuple[int, int, int], emb_dim: int) -> torch.T
         end = int(hid_dim * (i + 1))
         emb[:, start:end] = get_pos_embed_1d(n_queries, hid_dim)
         pos_emb_list.append(emb)
-    pos_emb = torch.einsum("il,jl,kl -> ijkl", *pos_emb_list)
+    pos_1 = pos_emb_list.pop(0)
+    pos_2 = pos_emb_list.pop(0)
+    pos_emb = torch.einsum("...j, ij -> ...ij", pos_1, pos_2)
+    while len(pos_emb_list):
+        pos_emb = torch.einsum("...j, ij -> ...ij", pos_emb, pos_emb_list.pop(0))
     return pos_emb

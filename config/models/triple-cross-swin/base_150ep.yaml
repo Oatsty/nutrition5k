@@ -8,20 +8,21 @@ EVAL:
   HEIGHT: 480
   WIDTH: 640
 MODEL:
-  DROPOUT_RATE: 0.1
-  MASK_WEIGHT: 0.8
-  NAME: cross-swin
-  PRETRAINED: microsoft/swin-tiny-patch4-window7-224
   DECODER:
-    NUM_LAYERS: 4
     MLP_RATIO: 4
-    NUM_HEADS: 8
-SAVE_PATH: models/cross-swin/fix/base_150ep.pt
+    NUM_HEADS: 12
+    NUM_LAYERS: 4
+  DROPOUT_RATE: 0.1
+  MASK_DIM: 4
+  MASK_WEIGHT: 0.8
+  NAME: triple-cross-swin
+  PRETRAINED: microsoft/swin-tiny-patch4-window7-224
+SAVE_PATH: models/triple-cross-swin/base_150ep.pt
 TITLE:
-- fpn openseed cross-attention swin mask 0.8 lossp=0.8 modified loss with aug+rotate fc 0.1 dropout
-  1 layers with warmup 150ep multi scale
+- fpn openseed triple-cross-attention swin multi-mask 0.8 lossp=0.8 modified loss
+  with aug+rotate fc 0.1 dropout 1 layers with warmup 150ep multi scale
 TRAIN:
-  BATCH_SIZE: 16
+  BATCH_SIZE: 4
   CKPT: null
   FINETUNE: false
   LAYERS: 1
@@ -34,6 +35,6 @@ TRAIN:
   REMOVE_RATE: 0.03
   SCHEDULER_WARMUP: 15
   SEED: 12345
-  TRAINER: mask_lp
+  TRAINER: multi_mask
   WARMUP_EPOCHS: 10
   WEIGHT_DECAY: 0.0001

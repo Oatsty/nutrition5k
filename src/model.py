@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 import timm
 import torch
 import torch.nn.functional as f
-from custom_utils import get_pos_embed_3d
+from custom_utils import get_pos_embed_nd
 from einops import rearrange
 from seg_openseed import OpenSeeDSeg
 from timm.models.vision_transformer import Attention
@@ -115,7 +115,7 @@ class CrossAttentionBlock(nn.Module):
         self.layernorm3 = nn.LayerNorm(model_dim)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        n, b, c, h, w = x.shape
+        b, n, h, w, c = x.shape
         x = rearrange(x, "b n h w c -> (b n) (h w) c")
         x = self.attention1(self.layernorm1(x)) + x
         x = rearrange(x, "(b n) (h w) c -> (b h w) n c", b=b, h=h)
@@ -133,6 +133,58 @@ class CrossAttentionDecoder(nn.Module):
         self.blocks = nn.ModuleList(
             [
                 CrossAttentionBlock(model_dim, num_heads, mlp_ratio)
+                for _ in range(num_layers)
+            ]
+        )
+
+    def forward(self, x) -> torch.Tensor:
+        for block in self.blocks:
+            x = block(x)
+        return x
+
+
+class TripleCrossAttentionBlock(nn.Module):
+    def __init__(self, model_dim: int, num_heads: int, mlp_ratio: float) -> None:
+        super(TripleCrossAttentionBlock, self).__init__()
+        self.layernorm1 = nn.LayerNorm(model_dim)
+        self.attention1 = Attention(model_dim, num_heads)
+        self.layernorm2 = nn.LayerNorm(model_dim)
+        self.attention2 = Attention(model_dim, num_heads)
+        self.layernorm3 = nn.LayerNorm(model_dim)
+        self.attention3 = Attention(model_dim, num_heads)
+        self.layernorm4 = nn.LayerNorm(model_dim)
+        mlp_dim = int(model_dim * mlp_ratio)
+        self.mlp = nn.Sequential(
+            nn.Linear(model_dim, mlp_dim),
+            nn.GELU(),
+            nn.Linear(mlp_dim, model_dim),
+        )
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        b, n, m, h, w, c = x.shape
+        x = rearrange(x, "b n m h w c -> (b n m) (h w) c")
+        x = self.attention1(self.layernorm1(x)) + x
+        x = rearrange(x, "(b n m) (h w) c -> (b m h w) n c", b=b, h=h, n=n)
+        x = self.attention2(self.layernorm2(x)) + x
+        x = rearrange(x, "(b m h w) n c ->  (b n h w) m c", b=b, h=h, m=m)
+        x = self.attention3(self.layernorm3(x)) + x
+        x = rearrange(x, "(b n h w) m c ->  b n m h w c", b=b, h=h, n=n)
+        x = self.mlp(self.layernorm4(x)) + x
+        return x
+
+
+class TripleCrossAttentionDecoder(nn.Module):
+    def __init__(
+        self,
+        model_dim: int,
+        num_layers: int,
+        num_heads: int,
+        mlp_ratio: float,
+    ) -> None:
+        super(TripleCrossAttentionDecoder, self).__init__()
+        self.blocks = nn.ModuleList(
+            [
+                TripleCrossAttentionBlock(model_dim, num_heads, mlp_ratio)
                 for _ in range(num_layers)
             ]
         )
@@ -409,10 +461,10 @@ class FPNSwin(BaseModel):
         hidden_states = torch.stack([emb for emb in hidden_states.values()])
         return hidden_states
 
-    def pos_emb_3d(self, hidden_states: torch.Tensor) -> torch.Tensor:
+    def add_pos_emb(self, hidden_states: torch.Tensor) -> torch.Tensor:
         hidden_states = rearrange(hidden_states, "n b c h w -> b n h w c")
         _, n, h, w, c = hidden_states.shape
-        pos_emb = get_pos_embed_3d((n, h, w), c).to(hidden_states.device)
+        pos_emb = get_pos_embed_nd(n, h, w, emb_dim=c).to(hidden_states.device)
         hidden_states = hidden_states + pos_emb
         hidden_states = rearrange(hidden_states, "b n h w c -> n b c h w")
         return hidden_states
@@ -464,7 +516,7 @@ class FPNSwin(BaseModel):
 
         if self.pos_emb:
             # 3dposition embedding
-            hidden_states = self.pos_emb_3d(hidden_states)
+            hidden_states = self.add_pos_emb(hidden_states)
         if not skip_attn:
             hidden_states = self.attn(hidden_states)
         hidden_states = rearrange(hidden_states, "n b c h w -> b (n c) h w")
@@ -569,6 +621,98 @@ class FPNCrossSwinMultiMask(FPNCrossSwin):
         return feats_dict
 
 
+class FPNTripleCrossSwin(FPNCrossSwin):
+    def __init__(
+        self,
+        hidden_dim: int,
+        mask_dim: int,
+        num_layers: int,
+        num_heads: int,
+        mlp_ratio: float,
+        pretrained_model: str = "microsoft/swin-tiny-patch4-window7-224",
+        regressor: BaseRegressor = Regressor(3072, 3072),
+        resolution_level: int = 2,
+        mask_weight: float = 0.8,
+        dropout_rate: float = 0.1,
+        pos_emb: bool = True,
+        fpn_after_mask: bool = False,
+        device="cuda",
+    ) -> None:
+        super().__init__(
+            hidden_dim,
+            num_layers,
+            num_heads,
+            mlp_ratio,
+            pretrained_model,
+            regressor,
+            resolution_level,
+            mask_weight,
+            dropout_rate,
+            pos_emb,
+            fpn_after_mask,
+            device,
+        )
+        self.mask_dim = mask_dim
+        self.decoder = TripleCrossAttentionDecoder(
+            hidden_dim, num_layers, num_heads, mlp_ratio
+        )
+
+    def mask(
+        self,
+        feats_hid: dict[str, torch.FloatTensor] | dict[str, torch.Tensor],
+        mask: torch.Tensor,
+    ) -> dict[str, torch.Tensor]:
+        if len(mask.shape) > 4 or len(mask.shape) <= 2:
+            raise ValueError(f"Invalid mask shape: {mask.shape}")
+        if len(mask.shape) == 3:
+            mask = mask.unsqueeze(1)
+        feats_dict = {}
+        for i, hid in feats_hid.items():
+            m = f.adaptive_avg_pool2d(mask.float(), (hid.shape[-2], hid.shape[-1]))[
+                :, : self.mask_dim
+            ]
+            m = torch.where(m.bool(), m, self.mask_weight)
+            feats_dict[i] = torch.einsum("bchw, bmhw -> bmchw", hid, m)
+        return feats_dict
+
+    def resize(
+        self,
+        rgb_hids: dict[str, torch.Tensor],
+        d_hids: dict[str, torch.Tensor],
+    ) -> torch.Tensor:
+        _, _, C, fin_res_h, fin_res_w = rgb_hids[self.resolution_level].shape
+        hidden_states = {}
+        for (rgb_k, rgb_hid), (d_k, d_hid) in zip(rgb_hids.items(), d_hids.items()):
+            if rgb_hid.shape[-1] > fin_res_w:
+                rgb_hids[rgb_k] = f.adaptive_avg_pool3d(
+                    rgb_hid, (C, fin_res_h, fin_res_w)
+                )
+            else:
+                rgb_hids[rgb_k] = f.interpolate(rgb_hid, (C, fin_res_h, fin_res_w))
+            if d_hid.shape[-1] > fin_res_w:
+                d_hids[d_k] = f.adaptive_avg_pool3d(d_hid, (C, fin_res_h, fin_res_w))
+            else:
+                d_hids[d_k] = f.interpolate(d_hid, (C, fin_res_h, fin_res_w))
+            hidden_states[rgb_k] = rgb_hids[rgb_k] + d_hids[d_k]
+        hidden_states = torch.stack([emb for emb in hidden_states.values()])
+        return hidden_states
+
+    def add_pos_emb(self, hidden_states: torch.Tensor) -> torch.Tensor:
+        hidden_states = rearrange(hidden_states, "n b m c h w -> b n m h w c")
+        _, n, m, h, w, c = hidden_states.shape
+        pos_emb = get_pos_embed_nd(n, m, h, w, emb_dim=c).to(hidden_states.device)
+        hidden_states = hidden_states + pos_emb
+        hidden_states = rearrange(hidden_states, "b n m h w c -> n b m c h w")
+        return hidden_states
+
+    def attn(self, hidden_states: torch.Tensor) -> torch.Tensor:
+        hidden_states = rearrange(hidden_states, " n b m c h w -> b n m h w c")
+        hidden_states = self.decoder(hidden_states)
+        hidden_states = rearrange(hidden_states, "b n m h w c -> n b m c h w")
+        hidden_states = hidden_states.mean(2)
+        return hidden_states
+
+
 def get_model(config: CN, device: torch.device) -> BaseModel:
     mod = config.MODEL.NAME
     pretrained_model = config.MODEL.PRETRAINED
@@ -625,6 +769,18 @@ def get_model(config: CN, device: torch.device) -> BaseModel:
                 mask_weight=config.MODEL.MASK_WEIGHT,
                 dropout_rate=dropout_rate,
             )
+        elif mod == "triple-cross-swin":
+            model = FPNTripleCrossSwin(
+                768,
+                config.MODEL.MASK_DIM,
+                config.MODEL.DECODER.NUM_LAYERS,
+                config.MODEL.DECODER.NUM_HEADS,
+                config.MODEL.DECODER.MLP_RATIO,
+                pretrained_model,
+                regressor=Regressor(3072, 3072),
+                mask_weight=config.MODEL.MASK_WEIGHT,
+                dropout_rate=dropout_rate,
+            )
         elif mod == "openseed":
             model = FPNOpenSeeD(
                 512,
@@ -657,6 +813,18 @@ def get_model(config: CN, device: torch.device) -> BaseModel:
                 mask_weight=config.MODEL.MASK_WEIGHT,
                 dropout_rate=dropout_rate,
             )
+        elif mod == "triple-cross-swin":
+            model = FPNTripleCrossSwin(
+                768,
+                config.MODEL.MASK_DIM,
+                config.MODEL.DECODER.NUM_LAYERS,
+                config.MODEL.DECODER.NUM_HEADS,
+                config.MODEL.DECODER.MLP_RATIO,
+                pretrained_model,
+                regressor=RegressorIngrs(3072, 3072),
+                mask_weight=config.MODEL.MASK_WEIGHT,
+                dropout_rate=dropout_rate,
+            )
         elif mod == "cross-swin-multi-mask":
             regressor_dim = 4 * (768 + config.MODEL.MASK_DIM)
             model = FPNCrossSwinMultiMask(
@@ -666,7 +834,7 @@ def get_model(config: CN, device: torch.device) -> BaseModel:
                 config.MODEL.DECODER.NUM_HEADS,
                 config.MODEL.DECODER.MLP_RATIO,
                 pretrained_model,
-                regressor=Regressor(regressor_dim, regressor_dim),
+                regressor=RegressorIngrs(regressor_dim, regressor_dim),
                 mask_weight=config.MODEL.MASK_WEIGHT,
                 dropout_rate=dropout_rate,
             )
