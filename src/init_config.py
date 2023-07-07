@@ -42,7 +42,7 @@ _C.MODEL.DROPOUT_RATE = 0.1
 _C.MODEL.DECODER = CN()
 _C.MODEL.DECODER.NUM_HEADS = 8
 _C.MODEL.DECODER.NUM_LAYERS = 4
-_C.MODEL.DECODER.MLP_RATIO = 4
+_C.MODEL.DECODER.MLP_RATIO = 4.0
 
 # -----------------------------------------------------------------------------
 # train
