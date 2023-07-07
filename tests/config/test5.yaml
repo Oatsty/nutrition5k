@@ -13,9 +13,9 @@ MODEL:
   NAME: cross-swin
   PRETRAINED: microsoft/swin-tiny-patch4-window7-224
   DECODER:
-    NUM_LAYERS: 4
-    MLP_RATIO: 4
-    NUM_HEADS: 8
+    NUM_LAYERS: 1
+    MLP_RATIO: 1
+    NUM_HEADS: 12
 SAVE_PATH: models/test/test5.pt
 TITLE:
 - test5
