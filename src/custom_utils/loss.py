@@ -32,13 +32,10 @@ class Lploss(nn.Module):
         loss = torch.exp(entropy)
         loss = loss.sum()
         loss = torch.clip(loss, 0, 1e20)
-        loss = torch.exp(torch.log(loss + 1e-20) / self.p)
         if self.reduction == "mean":
-            return loss / N
-        elif self.reduction == "sum":
-            return loss
-        else:
-            raise ValueError(f"Unknown reduction: {self.reduction}")
+            loss = loss / N
+        loss = torch.exp(torch.log(loss + 1e-20) / self.p)
+        return loss
 
 
 def loss_func_multi(
