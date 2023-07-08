@@ -114,6 +114,10 @@ def make_dataset(
         metadatas_path_p = Path(config.DATA.METADATAS_PATH)
         splits_train_path_p = Path(config.DATA.SPLITS_TRAIN_PATH)
         splits_test_path_p = Path(config.DATA.SPLITS_TEST_PATH)
+        if config.TRAIN.TRAINER != "multi_mask":
+            kwargs.update(w_mask_all=False)
+        if config.TRAIN.TRAINER == "normal" or config.TRAIN.TRAINER == "noisy":
+            kwargs.update(w_mask=False)
     else:
         imgs_dir_p = Path(imgs_dir)
         metadatas_path_p = Path(metadatas_path)

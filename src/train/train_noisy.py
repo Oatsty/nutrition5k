@@ -74,4 +74,5 @@ class NoisyTrainer(BaseTrainer):
                 loss.backward()
                 self.optimizer.step()
             self.avg_meter.update({"total": loss.item()}, len(rgb_img))
-            self.avg_meter.update(loss_multi, len(rgb_img))
+            loss_multi_item = {k: v.item() for k, v in loss_multi.items()}
+            self.avg_meter.update(loss_multi_item, len(rgb_img))

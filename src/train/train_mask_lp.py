@@ -64,8 +64,11 @@ class MaskLPTrainer(BaseTrainer):
                 assert isinstance(loss, torch.Tensor)
                 loss.backward()
                 self.optimizer.step()
-            loss_multi_l1 = self.loss_func(outputs, metadata, device)
-            loss_l1 = sum(loss_multi_l1.values())
-            assert isinstance(loss_l1, torch.Tensor)
-            self.avg_meter.update({"total": loss_l1.item()}, len(rgb_img))
-            self.avg_meter.update(loss_multi_l1, len(rgb_img))
+            outputs_detached = {k: v.detach() for k, v in outputs.items()}
+            with torch.no_grad():
+                loss_multi_l1 = self.loss_func(outputs_detached, metadata, device)
+                loss_l1 = sum(loss_multi_l1.values())
+                assert isinstance(loss_l1, torch.Tensor)
+                self.avg_meter.update({"total": loss_l1.item()}, len(rgb_img))
+                loss_multi_l1_item = {k: v.item() for k, v in loss_multi_l1.items()}
+                self.avg_meter.update(loss_multi_l1_item, len(rgb_img))

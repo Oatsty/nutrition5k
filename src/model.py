@@ -651,6 +651,43 @@ class FPNNoCrossSwinMultiMask(FPNSwinBase):
         return hidden_states
 
 
+class FPNNoCrossSwinSingleMask(FPNSwinBase):
+    def __init__(
+        self,
+        hidden_dim: int,
+        num_layers: int,
+        num_heads: int,
+        mlp_ratio: float,
+        pretrained_model: str = "microsoft/swin-tiny-patch4-window7-224",
+        regressor: BaseRegressor = Regressor(3072, 3072),
+        resolution_level: int = 2,
+        mask_weight: float = 0.8,
+        dropout_rate: float = 0.1,
+        pos_emb: bool = True,
+        fpn_after_mask: bool = False,
+        device="cuda",
+    ) -> None:
+        super().__init__(
+            hidden_dim,
+            pretrained_model,
+            regressor,
+            resolution_level,
+            mask_weight,
+            dropout_rate,
+            pos_emb,
+            fpn_after_mask,
+            device,
+        )
+        self.decoder = AttentionDecoder(hidden_dim, num_layers, num_heads, mlp_ratio)
+
+    def attn(self, hidden_states: torch.Tensor) -> torch.Tensor:
+        n, b, c, h, w = hidden_states.shape
+        hidden_states = rearrange(hidden_states, " n b c h w -> b (n h w) c")
+        hidden_states = self.decoder(hidden_states)
+        hidden_states = rearrange(hidden_states, "b (n h w) c -> n b c h w", n=n, h=h)
+        return hidden_states
+
+
 class FPNTripleCrossSwin(FPNSwinBase):
     def __init__(
         self,
@@ -763,6 +800,17 @@ def get_model(config: CN, device: torch.device) -> BaseModel:
                 mask_weight=config.MODEL.MASK_WEIGHT,
                 dropout_rate=dropout_rate,
             )
+        elif mod == "no-cross-swin-single-mask":
+            model = FPNNoCrossSwinSingleMask(
+                768,
+                config.MODEL.DECODER.NUM_LAYERS,
+                config.MODEL.DECODER.NUM_HEADS,
+                config.MODEL.DECODER.MLP_RATIO,
+                pretrained_model,
+                regressor=Regressor(3072, 3072),
+                mask_weight=config.MODEL.MASK_WEIGHT,
+                dropout_rate=dropout_rate,
+            )
         elif mod == "triple-cross-swin":
             model = FPNTripleCrossSwin(
                 768,
@@ -817,6 +865,17 @@ def get_model(config: CN, device: torch.device) -> BaseModel:
                 config.MODEL.DECODER.MLP_RATIO,
                 pretrained_model,
                 regressor=RegressorIngrs(regressor_dim, regressor_dim),
+                mask_weight=config.MODEL.MASK_WEIGHT,
+                dropout_rate=dropout_rate,
+            )
+        elif mod == "no-cross-swin-single-mask":
+            model = FPNNoCrossSwinSingleMask(
+                768,
+                config.MODEL.DECODER.NUM_LAYERS,
+                config.MODEL.DECODER.NUM_HEADS,
+                config.MODEL.DECODER.MLP_RATIO,
+                pretrained_model,
+                regressor=RegressorIngrs(3072, 3072),
                 mask_weight=config.MODEL.MASK_WEIGHT,
                 dropout_rate=dropout_rate,
             )

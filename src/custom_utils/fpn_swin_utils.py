@@ -3,11 +3,12 @@ from abc import ABC, abstractmethod
 import torch
 import torch.nn.functional as f
 from einops import rearrange
+from torch import nn
 
 from .position_embedding import get_pos_embed_nd
 
 
-class Mask(ABC):
+class Mask(nn.Module, ABC):
     def __init__(self, mask_weight: float) -> None:
         super().__init__()
         self.mask_weight = mask_weight
@@ -89,7 +90,7 @@ class ProductMask(Mask):
         return feats_dict
 
 
-class Resize(ABC):
+class Resize(nn.Module, ABC):
     def __init__(self, resolution_level: str) -> None:
         super().__init__()
         self.resolution_level = resolution_level
@@ -149,7 +150,7 @@ class Resize3D(Resize):
         return hidden_states
 
 
-class AddPosEmb(ABC):
+class AddPosEmb(nn.Module, ABC):
     def __init__(self) -> None:
         super().__init__()
 
