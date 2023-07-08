@@ -138,12 +138,12 @@ class CrossAttentionBlock(nn.Module):
         self.layernorm3 = nn.LayerNorm(model_dim)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        b, n, h, w, c = x.shape
-        x = rearrange(x, "b n h w c -> (b n) (h w) c")
+        b, n, p, c = x.shape
+        x = rearrange(x, "b n p c -> (b n) p c")
         x = self.attention1(self.layernorm1(x)) + x
-        x = rearrange(x, "(b n) (h w) c -> (b h w) n c", b=b, h=h)
+        x = rearrange(x, "(b n) p c -> (b p) n c", b=b)
         x = self.attention2(self.layernorm2(x)) + x
-        x = rearrange(x, "(b h w) n c ->  b n h w c", b=b, h=h)
+        x = rearrange(x, "(b p) n c ->  b n p c", b=b, p=p)
         x = self.mlp(self.layernorm3(x)) + x
         return x
 
@@ -184,14 +184,14 @@ class TripleCrossAttentionBlock(nn.Module):
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        b, n, m, h, w, c = x.shape
-        x = rearrange(x, "b n m h w c -> (b n m) (h w) c")
+        b, n, m, p, c = x.shape
+        x = rearrange(x, "b n m p c -> (b n m) p c")
         x = self.attention1(self.layernorm1(x)) + x
-        x = rearrange(x, "(b n m) (h w) c -> (b m h w) n c", b=b, h=h, n=n)
+        x = rearrange(x, "(b n m) p c -> (b m p) n c", b=b, n=n)
         x = self.attention2(self.layernorm2(x)) + x
-        x = rearrange(x, "(b m h w) n c ->  (b n h w) m c", b=b, h=h, m=m)
+        x = rearrange(x, "(b m p) n c ->  (b n p) m c", b=b, p=p)
         x = self.attention3(self.layernorm3(x)) + x
-        x = rearrange(x, "(b n h w) m c ->  b n m h w c", b=b, h=h, n=n)
+        x = rearrange(x, "(b n p) m c ->  b n m p c", b=b, p=p)
         x = self.mlp(self.layernorm4(x)) + x
         return x
 
@@ -563,9 +563,54 @@ class FPNCrossSwin(FPNSwinBase):
         )
 
     def attn(self, hidden_states: torch.Tensor) -> torch.Tensor:
-        hidden_states = rearrange(hidden_states, " n b c h w -> b n h w c")
+        n, b, c, h, w = hidden_states.shape
+        hidden_states = rearrange(hidden_states, " n b c h w -> b n (h w) c")
         hidden_states = self.decoder(hidden_states)
-        hidden_states = rearrange(hidden_states, "b n h w c -> n b c h w")
+        hidden_states = rearrange(hidden_states, "b n (h w) c -> n b c h w", h=h)
+        return hidden_states
+
+
+class FPNCrossSwinCLS(FPNSwinBase):
+    def __init__(
+        self,
+        hidden_dim: int,
+        num_layers: int,
+        num_heads: int,
+        mlp_ratio: float,
+        pretrained_model: str = "microsoft/swin-tiny-patch4-window7-224",
+        regressor: BaseRegressor = Regressor(3072, 3072),
+        resolution_level: int = 2,
+        mask_weight: float = 0.8,
+        dropout_rate: float = 0.1,
+        pos_emb: bool = True,
+        fpn_after_mask: bool = True,
+        device="cuda",
+    ) -> None:
+        super().__init__(
+            hidden_dim,
+            pretrained_model,
+            regressor,
+            resolution_level,
+            mask_weight,
+            dropout_rate,
+            pos_emb,
+            fpn_after_mask,
+            device,
+        )
+        self.decoder = CrossAttentionDecoder(
+            hidden_dim, num_layers, num_heads, mlp_ratio
+        )
+        self.cls_token = nn.Parameter(torch.zeros(hidden_dim))
+        nn.init.trunc_normal_(self.cls_token)
+
+    def attn(self, hidden_states: torch.Tensor) -> torch.Tensor:
+        n, b, c, h, w = hidden_states.shape
+        hidden_states = rearrange(hidden_states, " n b c h w -> b n (h w) c")
+        cls_tokens = self.cls_token.repeat(b, n, 1, 1)
+        hidden_states = torch.cat([cls_tokens, hidden_states], dim=2)
+        hidden_states = self.decoder(hidden_states)
+        hidden_states = hidden_states[:, :, 1:]
+        hidden_states = rearrange(hidden_states, "b n (h w) c -> n b c h w", h=h)
         return hidden_states
 
 
@@ -604,9 +649,10 @@ class FPNCrossSwinMultiMask(FPNSwinBase):
         self.mask_fn = AppendMask(mask_weight, mask_dim)
 
     def attn(self, hidden_states: torch.Tensor) -> torch.Tensor:
-        hidden_states = rearrange(hidden_states, " n b c h w -> b n h w c")
+        n, b, c, h, w = hidden_states.shape
+        hidden_states = rearrange(hidden_states, " n b c h w -> b n (h w) c")
         hidden_states = self.decoder(hidden_states)
-        hidden_states = rearrange(hidden_states, "b n h w c -> n b c h w")
+        hidden_states = rearrange(hidden_states, "b n (h w) c -> n b c h w", h=h)
         return hidden_states
 
 
@@ -638,6 +684,7 @@ class FPNNoCrossSwinMultiMask(FPNSwinBase):
             fpn_after_mask,
             device,
         )
+        assert mask_dim % 6 == 0
         self.decoder = AttentionDecoder(
             hidden_dim + mask_dim, num_layers, num_heads, mlp_ratio
         )
@@ -724,9 +771,10 @@ class FPNTripleCrossSwin(FPNSwinBase):
         self.add_pos_emb = AddPosEmb4D()
 
     def attn(self, hidden_states: torch.Tensor) -> torch.Tensor:
-        hidden_states = rearrange(hidden_states, " n b m c h w -> b n m h w c")
+        n, b, m, c, h, w = hidden_states.shape
+        hidden_states = rearrange(hidden_states, " n b m c h w -> b n m (h w) c")
         hidden_states = self.decoder(hidden_states)
-        hidden_states = rearrange(hidden_states, "b n m h w c -> n b m c h w")
+        hidden_states = rearrange(hidden_states, "b n m (h w) c -> n b m c h w", h=h)
         hidden_states = hidden_states.mean(2)
         return hidden_states
 
@@ -765,6 +813,17 @@ def get_model(config: CN, device: torch.device) -> BaseModel:
             )
         elif mod == "cross-swin":
             model = FPNCrossSwin(
+                768,
+                config.MODEL.DECODER.NUM_LAYERS,
+                config.MODEL.DECODER.NUM_HEADS,
+                config.MODEL.DECODER.MLP_RATIO,
+                pretrained_model,
+                regressor=Regressor(3072, 3072),
+                mask_weight=config.MODEL.MASK_WEIGHT,
+                dropout_rate=dropout_rate,
+            )
+        elif mod == "cross-swin-cls":
+            model = FPNCrossSwinCLS(
                 768,
                 config.MODEL.DECODER.NUM_LAYERS,
                 config.MODEL.DECODER.NUM_HEADS,
@@ -846,6 +905,17 @@ def get_model(config: CN, device: torch.device) -> BaseModel:
             )
         elif mod == "cross-swin":
             model = FPNCrossSwin(
+                768,
+                config.MODEL.DECODER.NUM_LAYERS,
+                config.MODEL.DECODER.NUM_HEADS,
+                config.MODEL.DECODER.MLP_RATIO,
+                pretrained_model,
+                regressor=RegressorIngrs(3072, 3072),
+                mask_weight=config.MODEL.MASK_WEIGHT,
+                dropout_rate=dropout_rate,
+            )
+        elif mod == "cross-swin-cls":
+            model = FPNCrossSwinCLS(
                 768,
                 config.MODEL.DECODER.NUM_LAYERS,
                 config.MODEL.DECODER.NUM_HEADS,

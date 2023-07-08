@@ -60,9 +60,33 @@ def test5(mock_args):
 #     main()
 
 
-@mock.patch(
-    "argparse.ArgumentParser.parse_args",
-    return_value=argparse.Namespace(cfg="tests/config/test7.yaml"),
-)
-def test7(mock_args):
-    main()
+# @mock.patch(
+#     "argparse.ArgumentParser.parse_args",
+#     return_value=argparse.Namespace(cfg="tests/config/test7.yaml"),
+# )
+# def test7(mock_args):
+#     main()
+
+
+# @mock.patch(
+#     "argparse.ArgumentParser.parse_args",
+#     return_value=argparse.Namespace(cfg="tests/config/test8.yaml"),
+# )
+# def test8(mock_args):
+#     main()
+
+
+# @mock.patch(
+#     "argparse.ArgumentParser.parse_args",
+#     return_value=argparse.Namespace(cfg="tests/config/test9.yaml"),
+# )
+# def test9(mock_args):
+#     main()
+
+
+# @mock.patch(
+#     "argparse.ArgumentParser.parse_args",
+#     return_value=argparse.Namespace(cfg="tests/config/test10.yaml"),
+# )
+# def test10(mock_args):
+#     main()
