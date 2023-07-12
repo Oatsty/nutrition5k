@@ -10,7 +10,7 @@ EVAL:
 MODEL:
   DECODER:
     MLP_RATIO: 4.0
-    NUM_HEADS: 12
+    NUM_HEADS: 8
     NUM_LAYERS: 4
   DROPOUT_RATE: 0.1
   MASK_DIM: 12
@@ -22,7 +22,7 @@ TITLE:
 - fpn openseed cross-attention swin with CLS token mask 0.8 lossp=0.8 modified loss with aug+rotate
   fc 0.1 dropout 1 layers with warmup 150ep multi scale
 TRAIN:
-  BATCH_SIZE: 4
+  BATCH_SIZE: 8
   CKPT: null
   FINETUNE: false
   LAYERS: 1
@@ -37,4 +37,4 @@ TRAIN:
   SEED: 12345
   TRAINER: mask_lp
   WARMUP_EPOCHS: 10
-  WEIGHT_DECAY: 0.01
+  WEIGHT_DECAY: 0.0001

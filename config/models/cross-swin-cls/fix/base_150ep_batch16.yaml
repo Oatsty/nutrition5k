@@ -17,12 +17,12 @@ MODEL:
   MASK_WEIGHT: 0.8
   NAME: cross-swin-cls
   PRETRAINED: microsoft/swin-tiny-patch4-window7-224
-SAVE_PATH: models/cross-swin-cls/fix/base_150ep.pt
+SAVE_PATH: models/cross-swin-cls/fix/base_150ep_batch16.pt
 TITLE:
 - fpn openseed cross-attention swin with CLS token mask 0.8 lossp=0.8 modified loss
   with aug+rotate fc 0.1 dropout 1 layers with warmup 150ep multi scale
 TRAIN:
-  BATCH_SIZE: 8
+  BATCH_SIZE: 16
   CKPT: null
   FINETUNE: false
   LAYERS: 1

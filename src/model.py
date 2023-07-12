@@ -601,7 +601,7 @@ class FPNCrossSwinCLS(FPNSwinBase):
             hidden_dim, num_layers, num_heads, mlp_ratio
         )
         self.cls_token = nn.Parameter(torch.zeros(hidden_dim))
-        nn.init.trunc_normal_(self.cls_token)
+        nn.init.trunc_normal_(self.cls_token, std=0.02)
 
     def attn(self, hidden_states: torch.Tensor) -> torch.Tensor:
         n, b, c, h, w = hidden_states.shape
