@@ -109,11 +109,19 @@ class RegressorIngrs(BaseRegressor):
 
 class AttentionDecoder(nn.Module):
     def __init__(
-        self, model_dim: int, num_layers: int, num_heads: int, mlp_ratio: float
+        self,
+        model_dim: int,
+        num_layers: int,
+        num_heads: int,
+        mlp_ratio: float,
+        dropout: float = 0.0,
     ) -> None:
         super(AttentionDecoder, self).__init__()
         self.blocks = nn.ModuleList(
-            [Block(model_dim, num_heads, mlp_ratio) for _ in range(num_layers)]
+            [
+                Block(model_dim, num_heads, mlp_ratio, drop=dropout, attn_drop=dropout)
+                for _ in range(num_layers)
+            ]
         )
 
     def forward(self, x) -> torch.Tensor:
@@ -123,12 +131,18 @@ class AttentionDecoder(nn.Module):
 
 
 class CrossAttentionBlock(nn.Module):
-    def __init__(self, model_dim: int, num_heads: int, mlp_ratio: float) -> None:
+    def __init__(
+        self, model_dim: int, num_heads: int, mlp_ratio: float, dropout: float = 0.0
+    ) -> None:
         super(CrossAttentionBlock, self).__init__()
         self.layernorm1 = nn.LayerNorm(model_dim)
-        self.attention1 = Attention(model_dim, num_heads)
+        self.attention1 = Attention(
+            model_dim, num_heads, attn_drop=dropout, proj_drop=dropout
+        )
         self.layernorm2 = nn.LayerNorm(model_dim)
-        self.attention2 = Attention(model_dim, num_heads)
+        self.attention2 = Attention(
+            model_dim, num_heads, attn_drop=dropout, proj_drop=dropout
+        )
         mlp_dim = int(model_dim * mlp_ratio)
         self.mlp = nn.Sequential(
             nn.Linear(model_dim, mlp_dim),
@@ -150,12 +164,17 @@ class CrossAttentionBlock(nn.Module):
 
 class CrossAttentionDecoder(nn.Module):
     def __init__(
-        self, model_dim: int, num_layers: int, num_heads: int, mlp_ratio: float
+        self,
+        model_dim: int,
+        num_layers: int,
+        num_heads: int,
+        mlp_ratio: float,
+        dropout: float = 0.0,
     ) -> None:
         super(CrossAttentionDecoder, self).__init__()
         self.blocks = nn.ModuleList(
             [
-                CrossAttentionBlock(model_dim, num_heads, mlp_ratio)
+                CrossAttentionBlock(model_dim, num_heads, mlp_ratio, dropout)
                 for _ in range(num_layers)
             ]
         )
@@ -167,14 +186,22 @@ class CrossAttentionDecoder(nn.Module):
 
 
 class TripleCrossAttentionBlock(nn.Module):
-    def __init__(self, model_dim: int, num_heads: int, mlp_ratio: float) -> None:
+    def __init__(
+        self, model_dim: int, num_heads: int, mlp_ratio: float, dropout: float = 0.0
+    ) -> None:
         super(TripleCrossAttentionBlock, self).__init__()
         self.layernorm1 = nn.LayerNorm(model_dim)
-        self.attention1 = Attention(model_dim, num_heads)
+        self.attention1 = Attention(
+            model_dim, num_heads, attn_drop=dropout, proj_drop=dropout
+        )
         self.layernorm2 = nn.LayerNorm(model_dim)
-        self.attention2 = Attention(model_dim, num_heads)
+        self.attention2 = Attention(
+            model_dim, num_heads, attn_drop=dropout, proj_drop=dropout
+        )
         self.layernorm3 = nn.LayerNorm(model_dim)
-        self.attention3 = Attention(model_dim, num_heads)
+        self.attention3 = Attention(
+            model_dim, num_heads, attn_drop=dropout, proj_drop=dropout
+        )
         self.layernorm4 = nn.LayerNorm(model_dim)
         mlp_dim = int(model_dim * mlp_ratio)
         self.mlp = nn.Sequential(
@@ -203,11 +230,12 @@ class TripleCrossAttentionDecoder(nn.Module):
         num_layers: int,
         num_heads: int,
         mlp_ratio: float,
+        dropout: float = 0.0,
     ) -> None:
         super(TripleCrossAttentionDecoder, self).__init__()
         self.blocks = nn.ModuleList(
             [
-                TripleCrossAttentionBlock(model_dim, num_heads, mlp_ratio)
+                TripleCrossAttentionBlock(model_dim, num_heads, mlp_ratio, dropout)
                 for _ in range(num_layers)
             ]
         )
@@ -559,7 +587,7 @@ class FPNCrossSwin(FPNSwinBase):
             device,
         )
         self.decoder = CrossAttentionDecoder(
-            hidden_dim, num_layers, num_heads, mlp_ratio
+            hidden_dim, num_layers, num_heads, mlp_ratio, dropout_rate
         )
 
     def attn(self, hidden_states: torch.Tensor) -> torch.Tensor:
@@ -598,7 +626,7 @@ class FPNCrossSwinCLS(FPNSwinBase):
             device,
         )
         self.decoder = CrossAttentionDecoder(
-            hidden_dim, num_layers, num_heads, mlp_ratio
+            hidden_dim, num_layers, num_heads, mlp_ratio, dropout_rate
         )
         self.cls_token = nn.Parameter(torch.zeros(hidden_dim))
         nn.init.trunc_normal_(self.cls_token, std=0.02)
@@ -644,7 +672,7 @@ class FPNCrossSwinMultiMask(FPNSwinBase):
         )
         assert mask_dim % 6 == 0
         self.decoder = CrossAttentionDecoder(
-            hidden_dim + mask_dim, num_layers, num_heads, mlp_ratio
+            hidden_dim + mask_dim, num_layers, num_heads, mlp_ratio, dropout_rate
         )
         self.mask_fn = AppendMask(mask_weight, mask_dim)
 
@@ -686,7 +714,7 @@ class FPNNoCrossSwinMultiMask(FPNSwinBase):
         )
         assert mask_dim % 6 == 0
         self.decoder = AttentionDecoder(
-            hidden_dim + mask_dim, num_layers, num_heads, mlp_ratio
+            hidden_dim + mask_dim, num_layers, num_heads, mlp_ratio, dropout_rate
         )
         self.mask_fn = AppendMask(mask_weight, mask_dim)
 
@@ -725,7 +753,9 @@ class FPNNoCrossSwinSingleMask(FPNSwinBase):
             fpn_after_mask,
             device,
         )
-        self.decoder = AttentionDecoder(hidden_dim, num_layers, num_heads, mlp_ratio)
+        self.decoder = AttentionDecoder(
+            hidden_dim, num_layers, num_heads, mlp_ratio, dropout_rate
+        )
 
     def attn(self, hidden_states: torch.Tensor) -> torch.Tensor:
         n, b, c, h, w = hidden_states.shape
@@ -764,7 +794,7 @@ class FPNTripleCrossSwin(FPNSwinBase):
             device,
         )
         self.decoder = TripleCrossAttentionDecoder(
-            hidden_dim, num_layers, num_heads, mlp_ratio
+            hidden_dim, num_layers, num_heads, mlp_ratio, dropout_rate
         )
         self.mask_fn = ProductMask(mask_weight, mask_dim)
         self.resize_fn = Resize3D(str(resolution_level))

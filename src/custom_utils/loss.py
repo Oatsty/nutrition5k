@@ -32,9 +32,9 @@ class Lploss(nn.Module):
         loss = torch.exp(entropy)
         loss = loss.sum()
         loss = torch.clip(loss, 0, 1e20)
+        loss = torch.exp(torch.log(loss + 1e-20) / self.p)
         if self.reduction == "mean":
             loss = loss / N
-        loss = torch.exp(torch.log(loss + 1e-20) / self.p)
         return loss
 
 

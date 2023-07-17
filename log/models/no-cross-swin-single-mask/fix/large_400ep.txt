@@ -12024,3 +12024,15 @@ TRAIN:
 [2023-07-12 23:10:46,475] test protein percent loss: 0.2453
 [2023-07-12 23:10:46,475] test average percent loss: 0.2439
 [2023-07-12 23:10:46,476] Epoch 347/400
+[2023-07-12 23:24:31,966] train total loss: 0.9720
+[2023-07-12 23:24:31,967] train cal loss: 39.3573
+[2023-07-12 23:24:31,967] train cal percent loss: 0.1543
+[2023-07-12 23:24:31,967] train mass loss: 28.3257
+[2023-07-12 23:24:31,968] train mass percent loss: 0.1299
+[2023-07-12 23:24:31,969] train fat loss: 3.1352
+[2023-07-12 23:24:31,969] train fat percent loss: 0.2469
+[2023-07-12 23:24:31,969] train carb loss: 4.3054
+[2023-07-12 23:24:31,969] train carb percent loss: 0.2231
+[2023-07-12 23:24:31,969] train protein loss: 3.9005
+[2023-07-12 23:24:31,969] train protein percent loss: 0.2155
+[2023-07-12 23:24:31,969] train average percent loss: 0.1939
