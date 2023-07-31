@@ -18,14 +18,17 @@ class BaseTrainer(ABC):
         super().__init__()
         self.num_epochs = config.TRAIN.NUM_EPOCHS
         self.batch_size = config.TRAIN.BATCH_SIZE
-        self.resize_sizes = [
-            (256, 352),
-            (288, 384),
-            (320, 448),
-            (352, 480),
-            (384, 512),
-            (480, 640),
-        ]
+        if config.MODEL.PRETRAINED == "microsoft/swin-tiny-patch4-window7-224":
+            self.resize_sizes = [
+                (256, 352),
+                (288, 384),
+                (320, 448),
+                (352, 480),
+                (384, 512),
+                (480, 640),
+            ]
+        else:
+            self.resize_sizes = [(384, 512)]
         self.loss_func = get_loss(config)
         self.dataset = make_dataset(config)
         self.dataloader = {

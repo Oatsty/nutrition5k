@@ -3,6 +3,7 @@ from abc import ABC, abstractmethod
 import timm
 import torch
 import torch.nn.functional as f
+import torchvision.transforms.functional as TF
 from custom_utils.fpn_swin_utils import (
     AddPosEmb3D,
     AddPosEmb4D,
@@ -17,6 +18,7 @@ from seg_openseed import OpenSeeDSeg
 from timm.models.vision_transformer import Attention, Block
 from torch import nn
 from torchvision.ops import FeaturePyramidNetwork
+from transformers.models.auto.feature_extraction_auto import AutoFeatureExtractor
 from transformers.models.resnet.modeling_resnet import ResNetModel
 from transformers.models.swin.modeling_swin import SwinModel
 from transformers.utils.generic import ModelOutput
@@ -459,11 +461,16 @@ class FPNSwinBase(BaseModel):
         device="cuda",
     ) -> None:
         super(FPNSwinBase, self).__init__()
-        channel_list = [96, 192, 384, 768]
+        if pretrained_model == "microsoft/swin-tiny-patch4-window7-224":
+            channel_list = [96, 192, 384, 768]
+        elif pretrained_model == "microsoft/swin-large-patch4-window12-384-in22k":
+            channel_list = [192, 384, 768, 1536]
+        else:
+            raise ValueError(pretrained_model)
         self.pos_emb = pos_emb
         self.fpn_after_mask = fpn_after_mask
-        self.rgb_backbone = SwinModel.from_pretrained(pretrained_model)
-        self.depth_backbone = SwinModel.from_pretrained(pretrained_model)
+        self.pretrained_model = pretrained_model
+        self.init_backbone(pretrained_model)
         self.rgb_fpn = FeaturePyramidNetwork(channel_list, hidden_dim)
         self.depth_fpn = FeaturePyramidNetwork(channel_list, hidden_dim)
         self.attention = Attention(hidden_dim)
@@ -474,6 +481,46 @@ class FPNSwinBase(BaseModel):
         self.mask_fn = DefaultMask(mask_weight)
         self.resize_fn = Resize2D(str(resolution_level))
         self.add_pos_emb = AddPosEmb3D()
+
+    def init_backbone(self, pretrained_model) -> None:
+        self.rgb_backbone = SwinModel.from_pretrained(pretrained_model)
+        self.depth_backbone = SwinModel.from_pretrained(pretrained_model)
+        if pretrained_model != "microsoft/swin-tiny-patch4-window7-224":
+            self.rgb_feature_extractor = AutoFeatureExtractor.from_pretrained(
+                pretrained_model
+            )
+            self.depth_feature_extractor = AutoFeatureExtractor.from_pretrained(
+                pretrained_model
+            )
+
+    def feature_extract(
+        self, rgb_img: torch.Tensor, depth_img: torch.Tensor
+    ) -> tuple[tuple[torch.FloatTensor], tuple[torch.FloatTensor]]:
+        depth_img = depth_img.expand(-1, 3, -1, -1)
+        assert isinstance(self.rgb_backbone, SwinModel)
+        assert isinstance(self.depth_backbone, SwinModel)
+        if self.pretrained_model == "microsoft/swin-tiny-patch4-window7-224":
+            rgb_inputs = rgb_img
+            depth_inputs = depth_img
+        else:
+            # rgb_inputs = self.rgb_feature_extractor(images=rgb_img, return_tensors="pt")
+            # depth_inputs = self.depth_feature_extractor(
+            #     images=depth_img, return_tensors="pt"
+            # )
+            rgb_inputs = TF.center_crop(rgb_img, [384, 384])
+            depth_inputs = TF.center_crop(depth_img, [384, 384])
+
+        rgb_features = self.rgb_backbone.forward(rgb_inputs, output_hidden_states=True)  # type: ignore
+        d_features = self.depth_backbone.forward(
+            depth_inputs, output_hidden_states=True  # type: ignore
+        )
+        assert isinstance(rgb_features, ModelOutput)
+        assert isinstance(d_features, ModelOutput)
+        rgb_features_hid = rgb_features.reshaped_hidden_states
+        d_features_hid = d_features.reshaped_hidden_states
+        assert isinstance(rgb_features_hid, tuple)
+        assert isinstance(d_features_hid, tuple)
+        return rgb_features_hid, d_features_hid
 
     def attn(self, hidden_states: torch.Tensor) -> torch.Tensor:
         n, b, c, h, w = hidden_states.shape
@@ -493,19 +540,7 @@ class FPNSwinBase(BaseModel):
         **kwargs,
     ):
         B, _, H, W = rgb_img.shape
-        depth_img = depth_img.expand(-1, 3, -1, -1)
-        assert isinstance(self.rgb_backbone, SwinModel)
-        assert isinstance(self.depth_backbone, SwinModel)
-        rgb_features = self.rgb_backbone.forward(rgb_img, output_hidden_states=True)  # type: ignore
-        d_features = self.depth_backbone.forward(
-            depth_img, output_hidden_states=True  # type: ignore
-        )
-        assert isinstance(rgb_features, ModelOutput)
-        assert isinstance(d_features, ModelOutput)
-        rgb_features_hid = rgb_features.reshaped_hidden_states
-        d_features_hid = d_features.reshaped_hidden_states
-        assert isinstance(rgb_features_hid, tuple)
-        assert isinstance(d_features_hid, tuple)
+        rgb_features_hid, d_features_hid = self.feature_extract(rgb_img, depth_img)
         rgb_features_dict = {str(i): hid for i, hid in enumerate(rgb_features_hid[:-1])}
         d_features_dict = {str(i): hid for i, hid in enumerate(d_features_hid[:-1])}
         if self.fpn_after_mask:
