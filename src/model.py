@@ -844,6 +844,118 @@ class FPNTripleCrossSwin(FPNSwinBase):
         return hidden_states
 
 
+class FPNCrossSwinCLS2Branch(FPNSwinBase):
+    def __init__(
+        self,
+        hidden_dim: int,
+        num_layers: int,
+        num_heads: int,
+        mlp_ratio: float,
+        pretrained_model: str = "microsoft/swin-tiny-patch4-window7-224",
+        regressor: BaseRegressor = Regressor(3072, 3072),
+        mass_regressor: BaseRegressor = Regressor(3072, 3072),
+        resolution_level: int = 2,
+        mask_weight: float = 0.8,
+        dropout_rate: float = 0.1,
+        pos_emb: bool = True,
+        fpn_after_mask: bool = True,
+        device="cuda",
+    ) -> None:
+        super().__init__(
+            hidden_dim,
+            pretrained_model,
+            regressor,
+            resolution_level,
+            mask_weight,
+            dropout_rate,
+            pos_emb,
+            fpn_after_mask,
+            device,
+        )
+        self.mass_decoder = CrossAttentionDecoder(
+            hidden_dim, num_layers, num_heads, mlp_ratio, dropout_rate
+        )
+        self.nutrient_decoder = CrossAttentionDecoder(
+            hidden_dim, num_layers, num_heads, mlp_ratio, dropout_rate
+        )
+        self.mass_regressor = mass_regressor
+        self.cls_token = nn.Parameter(torch.zeros(hidden_dim))
+        nn.init.trunc_normal_(self.cls_token, std=0.02)
+
+    def attn(
+        self, masked_hidden_states: torch.Tensor, unmasked_hidden_states: torch.Tensor
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        n, b, c, h, w = masked_hidden_states.shape
+        cls_tokens = self.cls_token.repeat(b, n, 1, 1)
+        masked_hidden_states = rearrange(
+            masked_hidden_states, " n b c h w -> b n (h w) c"
+        )
+        masked_hidden_states = torch.cat([cls_tokens, masked_hidden_states], dim=2)
+        unmasked_hidden_states = rearrange(
+            unmasked_hidden_states, " n b c h w -> b n (h w) c"
+        )
+        unmasked_hidden_states = torch.cat([cls_tokens, unmasked_hidden_states], dim=2)
+        mass_hidden_states = self.mass_decoder(unmasked_hidden_states)
+        mass_hidden_states = mass_hidden_states[:, :, 1:]
+        mass_hidden_states = rearrange(
+            mass_hidden_states, "b n (h w) c -> n b c h w", h=h
+        )
+        nutrient_hidden_states = self.nutrient_decoder(masked_hidden_states)
+        nutrient_hidden_states = nutrient_hidden_states[:, :, 1:]
+        nutrient_hidden_states = rearrange(
+            nutrient_hidden_states, "b n (h w) c -> n b c h w", h=h
+        )
+        return mass_hidden_states, nutrient_hidden_states
+
+    def forward(
+        self,
+        rgb_img: torch.Tensor,
+        depth_img: torch.Tensor,
+        mask: torch.Tensor,
+        **kwargs,
+    ):
+        B, _, H, W = rgb_img.shape
+        rgb_features_hid, d_features_hid = self.feature_extract(rgb_img, depth_img)
+        rgb_features_dict = {str(i): hid for i, hid in enumerate(rgb_features_hid[:-1])}
+        d_features_dict = {str(i): hid for i, hid in enumerate(d_features_hid[:-1])}
+        rgb_features_dict = self.rgb_fpn.forward(rgb_features_dict)  # type: ignore
+        d_features_dict = self.depth_fpn.forward(d_features_dict)  # type: ignore
+        masked_rgb_hidden_states = self.mask_fn(rgb_features_dict, mask)
+        masked_d_hidden_states = self.mask_fn(d_features_dict, mask)
+        masked_hidden_states = self.resize_fn(
+            masked_rgb_hidden_states, masked_d_hidden_states
+        )
+        unmasked_hidden_states = self.resize_fn(rgb_features_dict, d_features_dict)
+
+        if self.pos_emb:
+            # 3dposition embedding
+            masked_hidden_states = self.add_pos_emb(masked_hidden_states)
+            unmasked_hidden_states = self.add_pos_emb(unmasked_hidden_states)
+        mass_hidden_states, nutrient_hidden_states = self.attn(
+            masked_hidden_states, unmasked_hidden_states
+        )
+        mass_hidden_states = rearrange(mass_hidden_states, "n b c h w -> b (n c) h w")
+        nutrient_hidden_states = rearrange(
+            nutrient_hidden_states, "n b c h w -> b (n c) h w"
+        )
+        hidden_states = mass_hidden_states + nutrient_hidden_states
+        emb = self.pooling.forward(hidden_states)
+        emb = self.flatten.forward(emb)
+        emb = self.dropout.forward(emb)
+        out = self.regressor(emb, **kwargs)
+        return out
+        # emb_mass = self.pooling.forward(mass_hidden_states)
+        # emb_mass = self.flatten.forward(emb_mass)
+        # emb_mass = self.dropout.forward(emb_mass)
+        # out_mass = self.mass_regressor(emb_mass, **kwargs)
+        # emb_nutrient = self.pooling.forward(nutrient_hidden_states)
+        # emb_nutrient = self.flatten.forward(emb_nutrient)
+        # emb_nutrient = self.dropout.forward(emb_nutrient)
+        # out_nutrient = self.regressor(emb_nutrient, **kwargs)
+        # out_nutrient["mass"] = out_mass["mass"]
+        # return out_nutrient
+
+
 def get_model(config: CN, device: torch.device) -> BaseModel:
     mod = config.MODEL.NAME
     pretrained_model = config.MODEL.PRETRAINED
@@ -895,6 +1007,18 @@ def get_model(config: CN, device: torch.device) -> BaseModel:
                 config.MODEL.DECODER.MLP_RATIO,
                 pretrained_model,
                 regressor=Regressor(3072, 3072),
+                mask_weight=config.MODEL.MASK_WEIGHT,
+                dropout_rate=dropout_rate,
+            )
+        elif mod == "cross-swin-cls-branch":
+            model = FPNCrossSwinCLS2Branch(
+                768,
+                config.MODEL.DECODER.NUM_LAYERS,
+                config.MODEL.DECODER.NUM_HEADS,
+                config.MODEL.DECODER.MLP_RATIO,
+                pretrained_model,
+                regressor=Regressor(3072, 3072),
+                mass_regressor=Regressor(3072, 3072),
                 mask_weight=config.MODEL.MASK_WEIGHT,
                 dropout_rate=dropout_rate,
             )
@@ -987,6 +1111,18 @@ def get_model(config: CN, device: torch.device) -> BaseModel:
                 config.MODEL.DECODER.MLP_RATIO,
                 pretrained_model,
                 regressor=RegressorIngrs(3072, 3072),
+                mask_weight=config.MODEL.MASK_WEIGHT,
+                dropout_rate=dropout_rate,
+            )
+        elif mod == "cross-swin-cls-branch":
+            model = FPNCrossSwinCLS2Branch(
+                768,
+                config.MODEL.DECODER.NUM_LAYERS,
+                config.MODEL.DECODER.NUM_HEADS,
+                config.MODEL.DECODER.MLP_RATIO,
+                pretrained_model,
+                regressor=Regressor(3072, 3072),
+                mass_regressor=Regressor(3072, 3072),
                 mask_weight=config.MODEL.MASK_WEIGHT,
                 dropout_rate=dropout_rate,
             )
