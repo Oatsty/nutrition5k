@@ -12,6 +12,21 @@ from .base_dataset import BaseDataset, Ingr, Metadata
 
 
 class Nutrition5kDataset(BaseDataset):
+    """
+    Nutrition 5k Dataset Class
+
+    Args:
+        imgs_dir (Path): Path to images directory
+        metadatas_path (Path): Path to metadatas (csv file)
+        splits (list[str]): list of image names in current split
+        transform (Optional[transforms.Compose]): RGB image transforms (default=None)
+        transform_depth (Optional[transforms.Compose]): depth image transforms (default=None)
+        normalize_depth (Optional[transforms.Compose]): dpeth normalization (default=None)
+        rotate_flip (Optional[bool]): Whether to perform rotation and horizontal flip data augmentation (default=True)
+        w_depth (Optional[bool]): Whether to load depth data (default=True)
+        w_mask (Optional[bool]): Whether to load top-1 mask (default=True)
+        w_mask_all (Optional[bool]): Whether to load all masks (default=True)
+    """
     def __init__(self, *args, **kwargs) -> None:
         super(Nutrition5kDataset, self).__init__(*args, **kwargs)
         self.metadatas_dict: dict[str, Metadata] = {}
@@ -28,6 +43,9 @@ class Nutrition5kDataset(BaseDataset):
         return imgs
 
     def init_metadatas(self):
+        """
+        Extract metadatas for all dishes and normalize
+        """
         mean_metadata = self.mean_metadata
         std_metadata = self.std_metadata
         for line in open(self.metadatas_path, "r").readlines():
@@ -123,6 +141,8 @@ def make_dataset(
         metadatas_path_p = Path(metadatas_path)
         splits_train_path_p = Path(splits_train_path)
         splits_test_path_p = Path(splits_test_path)
+
+    ### dishes with obvious mislabels
     removed = {
         "dish_1564159636",
         "dish_1551138237",

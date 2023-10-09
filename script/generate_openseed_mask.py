@@ -1,10 +1,13 @@
 import sys
 from pathlib import Path
 
-sys.path.insert(0, "/home/parinayok/nutrition5k/OpenSeeD")
-sys.path.append("/home/parinayok/nutrition5k")
+pth = "/".join(sys.path[0].split("/")[:-1])
+openseed_pth = "/".join([pth, "OpenSeeD"])
+sys.path.insert(0, openseed_pth)
+sys.path.append(pth)
 
 import torch
+import argparse
 from src.dataset import collate_fn
 from src.dataset.nutrition5k_dataset import make_dataset
 from src.seg_openseed import OpenSeeDSeg
@@ -13,18 +16,27 @@ from tqdm import tqdm
 
 
 def main():
+    # arguments
+    parser = argparse.ArgumentParser()
+    parser.add_argument('dir', type=str, help='dataset directory')
+    args = parser.parse_args()
+    data_dir = args.dir
     metadatas_path = (
-        "/srv/datasets2/nutrition5k_dataset/metadata/dish_metadata_cafe1.csv"
+        f"{data_dir}/metadata/dish_metadata_cafe1.csv"
     )
-    imgs_dir = "/srv/datasets2/nutrition5k_dataset/imagery/realsense_overhead"
+    imgs_dir = f"{data_dir}/imagery/realsense_overhead"
     splits_path = (
-        "/srv/datasets2/nutrition5k_dataset/dish_ids/splits/depth_train_ids.txt"
+        f"{data_dir}/dish_ids/splits/depth_train_ids.txt"
     )
     splits_test_path = (
-        "/srv/datasets2/nutrition5k_dataset/dish_ids/splits/depth_test_ids.txt"
+        f"{data_dir}/dish_ids/splits/depth_test_ids.txt"
     )
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+
+    # Init OpenSeeD segmentation module
     openseed_seg = OpenSeeDSeg(device)
+
+    # Init dataset
     dataset = make_dataset(
         None,
         imgs_dir,
@@ -43,6 +55,8 @@ def main():
         )
         for x in ["train", "test"]
     }
+
+    # Generate food region mask for all images
     for phase in ["train", "test"]:
         for batch in tqdm(dataloader[phase]):
             rgb_img = batch["rgb_img"]

@@ -16,6 +16,14 @@ logger = logging.getLogger()
 
 
 class MultiMaskTrainer(BaseTrainer):
+    """
+    Multi-Mask Trainer. Train with multiple food region masks.
+    Using cosine learning rate scheduler with Adam optimizer.
+    Default loss is Lp loss.
+
+    Args:
+        config (CN): config
+    """
     def init_train(self, config: CN, model: BaseModel) -> None:
         self.lp = config.TRAIN.LP
         scheduler_warmup = config.TRAIN.SCHEDULER_WARMUP

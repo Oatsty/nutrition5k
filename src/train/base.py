@@ -14,6 +14,12 @@ logger = logging.getLogger()
 
 
 class BaseTrainer(ABC):
+    """
+    Abstract class for trainers
+
+    Args:
+        config (CN): config
+    """
     def __init__(self, config: CN) -> None:
         super().__init__()
         self.num_epochs = config.TRAIN.NUM_EPOCHS
@@ -49,6 +55,13 @@ class BaseTrainer(ABC):
 
     @abstractmethod
     def init_train(self, config: CN, model: BaseModel) -> None:
+        """
+        Init optimizer and scheduler
+
+        Args:
+            config (CN): config
+            model (BaseModel): model in this training
+        """
         scheduler_warmup = config.TRAIN.SCHEDULER_WARMUP
         self.optimizer = optim.Adam(
             model.parameters(),
@@ -67,9 +80,24 @@ class BaseTrainer(ABC):
     def train_one_epoch(
         self, model: BaseModel, epoch: int, phase: str, device: torch.device
     ) -> None:
+        """
+        Train for one epoch
+
+        Args:
+            model (BaseModel): model in training
+            epoch (int): current epoch
+            phase (str): current phase, train/test etc.
+            device (torch.device): device
+        """
         ...
 
     def display_loss(self, phase: str):
+        """
+        Log MAE and PMAE for all nutrients and the average PMAE
+
+        Args:
+            phase (str): current phase, train/test etc.
+        """
         apmae = AverageMeter()
         for key, key_loss in self.avg_meter.iter_avg():
             if key == "total":
@@ -86,6 +114,14 @@ class BaseTrainer(ABC):
         logger.info(f"{phase} average percent loss: {apmae.avg:.4f}")
 
     def train(self, config: CN, model: BaseModel, device: torch.device) -> None:
+        """
+        Train the model for num_epochs and log the loss for every epoch
+
+        Args:
+            config (CN): config
+            model (BaseModel): model in training
+            device (torch.device): device
+        """
         self.init_train(config, model)
         for epoch in range(self.num_epochs):
             print(f'lr = {self.optimizer.param_groups[0]["lr"]}')

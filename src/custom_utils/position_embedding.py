@@ -2,6 +2,15 @@ import torch
 
 
 def get_pos_embed_1d(n_queries: int, emb_dim: int) -> torch.Tensor:
+    """
+    generate 1d positinal embedding
+
+    Args:
+        n_queries (int): number of positions
+        emb_dim (int): embedding dimension
+    Return:
+        pos_embed (torch.Tensor): 1-d positional embedding [n_queries x emb_dim]
+    """
     assert emb_dim % 2 == 0
     pos = torch.arange(0, n_queries, dtype=torch.float).unsqueeze(1)
     denom = torch.exp(
@@ -16,6 +25,15 @@ def get_pos_embed_1d(n_queries: int, emb_dim: int) -> torch.Tensor:
 
 
 def get_pos_embed_nd(*query_shape: int, emb_dim: int) -> torch.Tensor:
+    """
+    generate n-d positional embedding
+
+    Args:
+        *n_queries (int): number of positions in each dimension
+        emb_dim (int): embedding dimension
+    Return:
+        pos_embed (torch.Tensor): n-d positional embedding [*query_shape x emb_dim]
+    """
     query_dim = len(query_shape)
     assert emb_dim % query_dim == 0, f"invalid embedding dimension: {emb_dim}"
     hid_dim = emb_dim // query_dim

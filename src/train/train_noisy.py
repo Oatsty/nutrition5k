@@ -16,6 +16,15 @@ logger = logging.getLogger()
 
 
 class NoisyTrainer(BaseTrainer):
+    """
+    Noisy Trainer. Train without food region mask information.
+    Assumes that there are mislabels and update the labels in mid-late epochs.
+    Using cosine learning rate scheduler with Adam optimizer.
+    Default loss is L1loss.
+
+    Args:
+        config (CN): config
+    """
     def init_train(self, config: CN, model: BaseModel) -> None:
         self.warmup_epochs = config.TRAIN.WARMUP_EPOCHS
         self.noise_removal_epochs = config.TRAIN.NOISE_REMOVAL_EPOCHS
