@@ -18,7 +18,7 @@ conda run python3 -m pip install 'git+https://github.com/MaureenZOU/detectron2-x
 
 ## Dataset
 
-Follow the instruction from Google Nutrition-5k.
+Follow the instruction from [Google Nutrition-5k]{https://github.com/google-research-datasets/Nutrition5k}.
 
 ## Mask generation
 
@@ -40,9 +40,9 @@ Train the model using the following command. The final model should be saved at 
 CUDA_VISIBLE_DEVICES=0 python3 src/main.py --cfg config/models/base.yaml
 ```
 
-## Pre-trained models
+<!-- ## Pre-trained models
 
-Pre-trained models are provided at ...
+Pre-trained models are provided at ... -->
 
 ## Evaluation
 
