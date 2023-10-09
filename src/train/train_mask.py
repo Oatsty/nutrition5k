@@ -16,6 +16,14 @@ logger = logging.getLogger()
 
 
 class MaskTrainer(BaseTrainer):
+    """
+    Mask Trainer. Train with food region mask information.
+    Using cosine learning rate scheduler with Adam optimizer.
+    Default loss is L1 loss
+
+    Args:
+        config (CN): config
+    """
     def init_train(self, config: CN, model: BaseModel) -> None:
         scheduler_warmup = config.TRAIN.SCHEDULER_WARMUP
         self.optimizer = optim.Adam(

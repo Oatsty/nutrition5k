@@ -65,12 +65,27 @@ def collate_fn(batch):
 
 
 class BaseDataset(Dataset):
+    """
+    Base Dataset Class
+
+    Args:
+        imgs_dir (Path): Path to images directory
+        metadatas_path (Path): Path to metadatas (csv file)
+        splits (list[str]): list of image names in current split
+        transform (Optional[transforms.Compose]): RGB image transforms (default=None)
+        transform_depth (Optional[transforms.Compose]): depth image transforms (default=None)
+        normalize_depth (Optional[transforms.Compose]): dpeth normalization (default=None)
+        rotate_flip (Optional[bool]): Whether to perform rotation and horizontal flip data augmentation (default=True)
+        w_depth (Optional[bool]): Whether to load depth data (default=True)
+        w_mask (Optional[bool]): Whether to load top-1 mask (default=True)
+        w_mask_all (Optional[bool]): Whether to load all masks (default=True)
+    """
     def __init__(
         self,
         imgs_dir: Path,
         metadatas_path: Path,
         splits: list[str],
-        transform: Optional[transforms.Normalize] = None,
+        transform: Optional[transforms.Compose] = None,
         transform_depth: Optional[transforms.Compose] = None,
         normalize_depth: Optional[transforms.Compose] = None,
         rotate_flip: bool = True,
@@ -94,8 +109,6 @@ class BaseDataset(Dataset):
         else:
             self.transform = transforms.Compose(
                 [
-                    # transforms.Resize(256),
-                    # transforms.CenterCrop((256,256)),
                     transforms.ToTensor(),
                     transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
                 ]
@@ -105,8 +118,6 @@ class BaseDataset(Dataset):
         else:
             self.transform_depth = transforms.Compose(
                 [
-                    # transforms.Resize(256),
-                    # transforms.CenterCrop((256,256)),
                     transforms.PILToTensor(),
                 ]
             )

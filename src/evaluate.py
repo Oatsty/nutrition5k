@@ -21,7 +21,7 @@ from yacs.config import CfgNode as CN
 logger = logging.getLogger()
 
 
-def train(
+def evaluate(
     config: CN,
     model: nn.Module,
     loss_func: Callable,
@@ -31,7 +31,8 @@ def train(
     print(" ".join(config.TITLE))
     batch_size = config.TRAIN.BATCH_SIZE
     resize_size = (config.EVAL.HEIGHT, config.EVAL.WIDTH)
-    # データセットの準備
+
+    # dataset preparation
     dataset = make_dataset(config)
     dataloader = DataLoader(
         dataset["test"],
@@ -40,20 +41,25 @@ def train(
         shuffle=False,
         collate_fn=collate_fn,
     )
+
+    # evaluation
     running_loss = 0.0
     running_loss_multi = {}
     with torch.no_grad():
         for batch in tqdm(dataloader):
             rgb_img = batch["rgb_img"]
             depth_img = batch["depth_img"]
+            mask: torch.Tensor = batch["mask"]
             metadata: list[Metadata] = batch["metadata"]
             rgb_img = rgb_img.to(device)
             depth_img = depth_img.to(device)
+            mask = mask.to(device)
             resize = transforms.Resize(resize_size)
             rgb_img = resize(rgb_img)
             depth_img = resize(depth_img)
-            outputs = model(rgb_img, depth_img)
-            loss_multi = loss_func(outputs, metadata, criterion, device)
+            mask = resize(mask)
+            outputs = model(rgb_img, depth_img, mask=mask)
+            loss_multi = loss_func(outputs, metadata, device)
             loss = sum(loss_multi.values())
             assert isinstance(loss, torch.Tensor)
             running_loss += loss.item() * len(rgb_img)
@@ -63,6 +69,7 @@ def train(
                 else:
                     running_loss_multi[key] = loss_multi[key].item() * len(rgb_img)
 
+    # log
     running_loss /= len(dataset["test"])
     logger.info(f"loss: {running_loss:.4f}")
     for key in running_loss_multi.keys():
@@ -77,26 +84,30 @@ def train(
 
 
 def main():
+    # init config
     _, config = init_config.get_arguments()
     os.makedirs(os.path.dirname(config.SAVE_PATH), exist_ok=True)
 
-    # モデルの準備
+    # prepare the model
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
     model = get_model(config, device)
     model.to(device)
     model.eval()
     model.load_state_dict(torch.load(config.SAVE_PATH))
-    # 損失関数と最適化関数の定義
+
+    # loss function and criterion
     loss_func = get_loss(config)
     criterion = nn.L1Loss()
 
+    # init logger file path
     log_path = os.path.join("log", os.path.splitext(config.SAVE_PATH)[0] + "_eval.txt")
     os.makedirs(os.path.dirname(log_path), exist_ok=True)
     init_config.init_logger(os.path.dirname(log_path), os.path.basename(log_path))
     init_config.set_random_seed(config.TRAIN.SEED)
     logger.info(config.dump())
 
-    train(config, model, loss_func, criterion, device=device)
+    # evaluate
+    evaluate(config, model, loss_func, criterion, device=device)
 
 
 if __name__ == "__main__":

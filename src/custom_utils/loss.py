@@ -10,6 +10,14 @@ num_ingrs = 555
 
 
 def get_keys(config: CN):
+    """
+    Get model output keys. Depends on the loss function.
+
+    Args:
+        config (CN): config
+    Return:
+        keys (list[str]): list of keys
+    """
     loss = config.TRAIN.LOSS
     if loss == "multi":
         return ["cal", "mass", "fat", "carb", "protein"]
@@ -20,12 +28,28 @@ def get_keys(config: CN):
 
 
 class Lploss(nn.Module):
+    """
+    Lp Loss Module
+
+    Args:
+        p (float): p value [0,1]
+        reduction (str): "mean" or "sum"
+    """
     def __init__(self, p: float, reduction: str = "mean") -> None:
         super(Lploss, self).__init__()
         self.reduction = reduction
         self.p = p
 
     def forward(self, output: torch.Tensor, target: torch.Tensor):
+        """
+        Calculate Lp loss
+
+        Args:
+            output (torch.Tensor): Model outputs for a specific nutrient. Desired shape [N]
+            target (torch.Tensor): Target values. Desired shape [N]
+        Return:
+            loss (torch.Tensor): Scalar tensor for Lp loss
+        """
         N = output.shape[0]
         l1loss = (output - target).abs()
         entropy = torch.clip(self.p * torch.log(l1loss + 1e-20), -1e20, 20)
@@ -45,6 +69,17 @@ def loss_func_multi(
     p: float = 1.0,
     **kwargs,
 ) -> dict[str, torch.Tensor]:
+    """
+    Calculate loss for all nutritional values (cal, mass, fat, carb, protein)
+
+    Args:
+        outputs (dict[str, torch.Tensor]): Model outputs with keys = [cal, mass, fat, carb, protein]
+        metadata list[Metadata]: Target values represent by a list of metadata.
+        device (torch.device): Device
+        p (float): Lp loss p [0,1]
+    Return:
+        loss_multi (dict[str, torch.Tensor]): Dictionary of losses for all nutrients. Same keys as model outputs.
+    """
     loss_multi = {
         x: torch.tensor(0.0) for x in ["cal", "mass", "fat", "carb", "protein"]
     }
@@ -64,6 +99,16 @@ def ingr_id_to_int(ingr_id: str) -> int:
 
 
 def ingrs_to_tensor(ingrs: list[Ingr], device: torch.device) -> torch.Tensor:
+    """
+    Generate a Tensor from ingredient list. Ingredient that are not included in the dish will be zero.
+    Ingredients in the dish will be weight according to its weight and sum to 1.
+
+    Args:
+        ingrs (list[Ingr]): List of ingredients
+        device (torch.device): Device
+    Return:
+        torch.Tensor: A 1d tensor representing the ingredient list
+    """
     ingr_ids = torch.tensor([ingr_id_to_int(ingr.id) for ingr in ingrs]).to(device)
     ingr_grams = (
         torch.tensor([float(ingr.grams) for ingr in ingrs]).to(device).unsqueeze(1)
@@ -76,6 +121,15 @@ def ingrs_to_tensor(ingrs: list[Ingr], device: torch.device) -> torch.Tensor:
 
 
 def met_to_ingr_tensor(metadata: list[Metadata], device: torch.device) -> torch.Tensor:
+    """
+    Convert a list of ingredient lists to a Tensor
+
+    Args:
+        metadata (list[Metadata]): Metadatas of all images in the batch
+        device (torch.device): Device
+    Return:
+        torch.Tensor: A 2d tensor representing all the ingredient lists
+    """
     ingrs_list: list[list[Ingr]] = [met.__getattribute__("ingrs") for met in metadata]
     target_ingrs = torch.stack([ingrs_to_tensor(ingrs, device) for ingrs in ingrs_list])
     return target_ingrs
@@ -87,6 +141,17 @@ def loss_func_multi_ingr(
     device: torch.device,
     **kwargs,
 ) -> dict[str, torch.Tensor]:
+    """
+    Calculate loss for all nutritional values (cal, mass, fat, carb, protein) and ingredients
+
+    Args:
+        outputs (dict[str, torch.Tensor]): Model outputs with keys = [cal, mass, fat, carb, protein, ingrs]
+        metadata list[Metadata]: Target values represent by a list of metadata.
+        device (torch.device): Device
+        p (float): Lp loss p [0,1]
+    Return:
+        loss_multi (dict[str, torch.Tensor]): Dictionary of losses for all nutrients and ingredients. Same keys as model outputs.
+    """
     loss_multi = loss_func_multi(outputs, metadata, device, **kwargs)
     target_ingrs = met_to_ingr_tensor(metadata, device)
     loss_multi["ingrs"] = (
@@ -112,6 +177,18 @@ def get_candidate(
     k: int = 3,
     weight: float = 0.1,
 ) -> dict[str, tuple[Metadata, float]]:
+    """
+    Update metadatas of dishes with high loss. High losses might resulted from noisy labels
+
+    Args:
+        outputs (dict[str, torch.Tensor]): Model outputs with keys = [cal, mass, fat, carb, protein, ingrs] or [cal, mass, fat, carb, protein]
+        metadata (list[Metadata]): list of target metadata
+        loss_multi (dict[str, torch.Tensor]): losses
+        k (int): number of metadatas to possibly update (default=3)
+        weight (float): update weight [0,1]. (default=0.1)
+    Return:
+        dict[str, (Metadata, float)]: dictionary of metadata to be updated and its loss
+    """
     outputs_cands: dict[str, tuple[Metadata, float]] = {}
     individual_losses = torch.stack(list(loss_multi.values())).sum(0)
     assert len(individual_losses) == len(outputs["cal"])

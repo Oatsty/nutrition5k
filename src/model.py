@@ -35,7 +35,15 @@ class BaseRegressor(nn.Module, ABC):
 
 
 class Regressor(BaseRegressor):
-    def __init__(self, in_dim: int, hidden_dim: int, dropout_rate: float = 0.1) -> None:
+    """
+    Nutrient Regressor. Output a dictionary of the predicted nutritional values (calorie, mass, fat, carb, and protein).
+    Consist of one shared linear layer and 1 or 2 separated linear layers.
+
+    Args:
+        in_dim (int): Dimension of the input embeddings
+        hidden_dim (int): Hidden dimension
+    """
+    def __init__(self, in_dim: int, hidden_dim: int) -> None:
         super(Regressor, self).__init__()
         self.fc1 = nn.Sequential(
             nn.Linear(in_dim, hidden_dim),
@@ -54,7 +62,6 @@ class Regressor(BaseRegressor):
                 x: nn.Sequential(
                     nn.Linear(hidden_dim, hidden_dim),
                     nn.ReLU(),
-                    # nn.Dropout(dropout_rate),
                     nn.Linear(hidden_dim, 1),
                 )
                 for x in ["cal", "mass", "fat", "carb", "protein"]
@@ -62,6 +69,15 @@ class Regressor(BaseRegressor):
         )
 
     def forward(self, x: torch.Tensor, depth: int = 3):
+        """
+        Compute predicted nutritional values.
+
+        Args:
+            x (torch.Tensor): input embeddings
+            depth (int): linear layer depth. (default=3)
+        Return:
+            dict[str, torch.Tensor] : output nutritional values (cal, mass, fat, carb, protein)
+        """
         x = self.fc1(x)
         if depth == 2:
             out = {
@@ -79,6 +95,15 @@ class Regressor(BaseRegressor):
 
 
 class RegressorIngrs(BaseRegressor):
+    """
+    Nutrient and Ingredient Regressor. Output a dictionary of the predicted nutritional values (calorie, mass, fat, carb, and protein) and ingredients.
+    Nutrition-5k consists of a total of 555 different ingredients.
+    Consist of one shared linear layer and 2 separated linear layers.
+
+    Args:
+        in_dim (int): Dimension of the input embeddings
+        hidden_dim (int): Hidden dimension
+    """
     def __init__(self, in_dim, hidden_dim) -> None:
         super(RegressorIngrs, self).__init__()
         self.regress_ingrs = nn.Sequential(
@@ -102,6 +127,15 @@ class RegressorIngrs(BaseRegressor):
         )
 
     def forward(self, x):
+        """
+        Compute predicted nutritional values and ingredients.
+
+        Args:
+            x (torch.Tensor): input embeddings
+            depth (int): linear layer depth. (default=3)
+        Return:
+            dict[str, torch.Tensor] : output nutritional values (cal, mass, fat, carb, protein) and ingredients
+        """
         x = self.fc1(x)
         out_ingrs = self.regress_ingrs(x)
         out = {d: self.regress[d](x) for d in ["cal", "mass", "fat", "carb", "protein"]}
@@ -110,6 +144,16 @@ class RegressorIngrs(BaseRegressor):
 
 
 class AttentionDecoder(nn.Module):
+    """
+    Simple Transformer Decoder with one self-attention mechanism per block.
+
+    Args:
+        model_dim (int): model dimension (qkv dimension)
+        num_layers (int): number of transformer blocks
+        num_heads (int): numer of heads for multihead attention
+        mlp_ratio (float): ratio of mlp hidden dimension to model dimension
+        dropout (float): drop out rate. (default = 0.0)
+    """
     def __init__(
         self,
         model_dim: int,
@@ -127,12 +171,29 @@ class AttentionDecoder(nn.Module):
         )
 
     def forward(self, x) -> torch.Tensor:
+        """
+        Compute simple transformer decoder.
+
+        Args:
+            x (torch.Tensor): input embeddings [batch x position x channel]
+        Return:
+            torch.Tensor: output embeddings (same shape as input)
+        """
         for block in self.blocks:
             x = block(x)
         return x
 
 
 class CrossAttentionBlock(nn.Module):
+    """
+    Cross-Attention Transformer Block with two self-attention mechanisms (layer-wise and position-wise) per block.
+
+    Args:
+        model_dim (int): model dimension (qkv dimension)
+        num_heads (int): numer of heads for multihead attention
+        mlp_ratio (float): ratio of mlp hidden dimension to model dimension
+        dropout (float): drop out rate. (default = 0.0)
+    """
     def __init__(
         self, model_dim: int, num_heads: int, mlp_ratio: float, dropout: float = 0.0
     ) -> None:
@@ -154,6 +215,14 @@ class CrossAttentionBlock(nn.Module):
         self.layernorm3 = nn.LayerNorm(model_dim)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """
+        Compute one cross-attention transformer block.
+
+        Args:
+            x (torch.Tensor): input embeddings [batch x num_layer x position x channel]
+        Return:
+            torch.Tensor: output embeddings (same shape as input)
+        """
         b, n, p, c = x.shape
         x = rearrange(x, "b n p c -> (b n) p c")
         x = self.attention1(self.layernorm1(x)) + x
@@ -165,6 +234,16 @@ class CrossAttentionBlock(nn.Module):
 
 
 class CrossAttentionDecoder(nn.Module):
+    """
+    Cross-Attention Transformer Decoder with two self-attention mechanisms (layer-wise and position-wise) per block.
+
+    Args:
+        model_dim (int): model dimension (qkv dimension)
+        num_layers (int): number of transformer blocks
+        num_heads (int): numer of heads for multihead attention
+        mlp_ratio (float): ratio of mlp hidden dimension to model dimension
+        dropout (float): drop out rate. (default = 0.0)
+    """
     def __init__(
         self,
         model_dim: int,
@@ -182,12 +261,29 @@ class CrossAttentionDecoder(nn.Module):
         )
 
     def forward(self, x) -> torch.Tensor:
+        """
+        Compute cross-attention transformer decoder.
+
+        Args:
+            x (torch.Tensor): input embeddings [batch x num_layer x position x channel]
+        Return:
+            torch.Tensor: output embeddings (same shape as input)
+        """
         for block in self.blocks:
             x = block(x)
         return x
 
 
 class TripleCrossAttentionBlock(nn.Module):
+    """
+    Triple-Cross-Attention Transformer Block with three self-attention mechanisms (layer-wise, position-wise, and mask-wise) per block.
+
+    Args:
+        model_dim (int): model dimension (qkv dimension)
+        num_heads (int): numer of heads for multihead attention
+        mlp_ratio (float): ratio of mlp hidden dimension to model dimension
+        dropout (float): drop out rate. (default = 0.0)
+    """
     def __init__(
         self, model_dim: int, num_heads: int, mlp_ratio: float, dropout: float = 0.0
     ) -> None:
@@ -213,6 +309,14 @@ class TripleCrossAttentionBlock(nn.Module):
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """
+        Compute one triple-cross-attention transformer block.
+
+        Args:
+            x (torch.Tensor): input embeddings [batch x num_layer x num_mask x position x channel]
+        Return:
+            torch.Tensor: output embeddings (same shape as input)
+        """
         b, n, m, p, c = x.shape
         x = rearrange(x, "b n m p c -> (b n m) p c")
         x = self.attention1(self.layernorm1(x)) + x
@@ -226,6 +330,16 @@ class TripleCrossAttentionBlock(nn.Module):
 
 
 class TripleCrossAttentionDecoder(nn.Module):
+    """
+    Triple-Cross-Attention Transformer Decoder with three self-attention mechanisms (layer-wise, position-wise, and mask-wise) per block.
+
+    Args:
+        model_dim (int): model dimension (qkv dimension)
+        num_layers (int): number of transformer blocks
+        num_heads (int): numer of heads for multihead attention
+        mlp_ratio (float): ratio of mlp hidden dimension to model dimension
+        dropout (float): drop out rate. (default = 0.0)
+    """
     def __init__(
         self,
         model_dim: int,
@@ -243,6 +357,14 @@ class TripleCrossAttentionDecoder(nn.Module):
         )
 
     def forward(self, x) -> torch.Tensor:
+        """
+        Compute triple-cross-attention transformer decoder.
+
+        Args:
+            x (torch.Tensor): input embeddings [batch x num_layer x num_mask x position x channel]
+        Return:
+            torch.Tensor: output embeddings (same shape as input)
+        """
         for block in self.blocks:
             x = block(x)
         return x
@@ -260,6 +382,14 @@ class BaseModel(nn.Module, ABC):
 
 
 class SimpleInceptionV2(BaseModel):
+    """
+    Google-Nutrition model implementation.
+
+    Args:
+        hidden_dim (int): hidden dimension
+        pretrained_model (str): pretrained model name (default = inception_resnet_v2)
+        regressor (BaseRegressor): Nutrient Regressor (default = Regrerssor(6144, 4096))
+    """
     def __init__(
         self,
         hidden_dim,
@@ -276,6 +406,15 @@ class SimpleInceptionV2(BaseModel):
         self.regressor = regressor
 
     def forward(self, img: torch.Tensor, depth: torch.Tensor, **kwargs):
+        """
+        Google-Nutrition implementation.
+
+        Args:
+            img (torch.Tensor): rgb image tensor [B x C x H x W]
+            depth (torch.Tensor): depth image tensor [B x 1 x H x W]
+        Return:
+            dict[str, torch.Tensor]: output nutritional values (cal, mass, fat, carb, protein)
+        """
         x = torch.cat([img, depth], dim=1)
         x = self.conv0(x)
         x = self.backbone(x)[-1]
@@ -286,6 +425,15 @@ class SimpleInceptionV2(BaseModel):
 
 
 class FPN(BaseModel):
+    """
+    MMFF-Nutrition model implementation.
+
+    Args:
+        hidden_dim (int): hidden dimension for attention, FPN, etc.
+        pretrained_model (str): pretrained model name (default = microsoft/resnet-50)
+        resolution_level (int): resolution level to interpolate after FPN (default=2)
+        regressor (BaseRegressor): Nutrient Regressor (default = Regressor(2048, 2048))
+    """
     def __init__(
         self,
         hidden_dim: int,
@@ -312,9 +460,21 @@ class FPN(BaseModel):
         depth_img: torch.Tensor,
         skip_attn: bool = False,
     ):
+        """
+        MMFF-Nutrition implementation
+
+        Args:
+            rgb_img (torch.Tensor): rgb image tensor [B x C x H x W]
+            depth_img (torch.Tensor): depth image tensor [B x 1 x H x W]
+            skip_attn (bool): whether to skip attetion mechanism (default=False)
+        Return:
+            dict[str, torch.Tensor]: output nutritional values (cal, mass, fat, carb, protein)
+        """
         B, _, _, _ = rgb_img.shape
         depth_img = depth_img.expand(-1, 3, -1, -1)
         inputs = {"rgb_img": rgb_img, "depth_img": depth_img}
+
+        #extract embeddings from backbone
         hidden_states_list = []
         for key, x in inputs.items():
             assert isinstance(self.backbone[key], ResNetModel)
@@ -326,7 +486,11 @@ class FPN(BaseModel):
         hidden_states_dict = {
             i: hid1 + hid2 for i, (hid1, hid2) in enumerate(zip(*hidden_states_list))
         }
+
+        #FPN
         hidden_states = self.fpn(hidden_states_dict)
+
+        #Resize to specified resolution level
         fin_res = hidden_states[self.resolution_level].shape[-1]
         for i, hid in hidden_states.items():
             if i <= self.resolution_level:
@@ -334,6 +498,8 @@ class FPN(BaseModel):
             else:
                 hidden_states[i] = f.interpolate(hid, fin_res)
         hidden_states = torch.stack([emb for emb in hidden_states.values()])
+
+        # self-attention
         if not skip_attn:
             pooled_hidden = hidden_states.mean(0)
             pooled_hidden = rearrange(pooled_hidden, "b c h w -> b (h w) c", h=fin_res)
@@ -341,113 +507,29 @@ class FPN(BaseModel):
             pooled_hidden = rearrange(pooled_hidden, "b (h w) c -> b c h w", h=fin_res)
             hidden_states = hidden_states + pooled_hidden.unsqueeze(0)
         hidden_states = rearrange(hidden_states, "n b c h w -> b (n c) h w", b=B)
+
+        #nutrient regression
         emb = self.pooling(hidden_states)
         emb = self.flatten(emb)
         out = self.regressor(emb)
         return out
 
 
-class FPNOpenSeeD(BaseModel):
-    def __init__(
-        self,
-        hidden_dim: int,
-        regressor: BaseRegressor,
-        resolution_level: str = "res4",
-        mask_weight: float = 0.5,
-        device="cuda",
-    ) -> None:
-        super(FPNOpenSeeD, self).__init__()
-        channel_list = [96, 192, 384, 768]
-        self.resolution_level = resolution_level
-        self.mask_weight = mask_weight
-        self.rgb_fpn = FeaturePyramidNetwork(channel_list, hidden_dim)
-        self.depth_fpn = FeaturePyramidNetwork(channel_list, hidden_dim)
-        self.attention = Attention(hidden_dim)
-        self.pooling = nn.AdaptiveAvgPool2d(1)
-        self.flatten = nn.Flatten()
-        self.dropout = nn.Dropout(0.1)
-        self.regressor = regressor
-        self.openseed_seg = OpenSeeDSeg(device)
-
-    def forward_features(
-        self,
-        rgb_features: dict[str, torch.Tensor],
-        depth_features: dict[str, torch.Tensor],
-        skip_attn: bool = False,
-        **kwargs,
-    ):
-        B, _, _, _ = rgb_features["res2"].shape
-        rgb_hidden_states: dict[str, torch.Tensor] = self.rgb_fpn(rgb_features)
-        depth_hidden_states: dict[str, torch.Tensor] = self.depth_fpn(depth_features)
-        _, _, fin_res_height, fin_res_width = rgb_hidden_states[
-            self.resolution_level
-        ].shape
-        hidden_states = {}
-        for (rgb_key, rgb_hid), (depth_key, depth_hid) in zip(
-            rgb_hidden_states.items(), depth_hidden_states.items()
-        ):
-            if rgb_hid.shape[-1] > fin_res_width:
-                rgb_hidden_states[rgb_key] = f.adaptive_avg_pool2d(
-                    rgb_hid, (fin_res_height, fin_res_width)
-                )
-            else:
-                rgb_hidden_states[rgb_key] = f.interpolate(
-                    rgb_hid, (fin_res_height, fin_res_width)
-                )
-            if depth_hid.shape[-1] > fin_res_width:
-                depth_hidden_states[depth_key] = f.adaptive_avg_pool2d(
-                    depth_hid, (fin_res_height, fin_res_width)
-                )
-            else:
-                depth_hidden_states[depth_key] = f.interpolate(
-                    depth_hid, (fin_res_height, fin_res_width)
-                )
-            hidden_states[rgb_key] = (
-                rgb_hidden_states[rgb_key] + depth_hidden_states[depth_key]
-            )
-        hidden_states = torch.stack([emb for emb in hidden_states.values()])
-        if not skip_attn:
-            pooled_hidden = hidden_states.mean(0)
-            pooled_hidden = rearrange(
-                pooled_hidden, "b c h w -> b (h w) c", h=fin_res_height
-            )
-            pooled_hidden = self.attention.forward(pooled_hidden)
-            pooled_hidden = rearrange(
-                pooled_hidden, "b (h w) c -> b c h w", h=fin_res_height
-            )
-            hidden_states = hidden_states + pooled_hidden.unsqueeze(0)
-        hidden_states = rearrange(hidden_states, "n b c h w -> b (n c) h w", b=B)
-        emb = self.pooling(hidden_states)
-        emb = self.flatten(emb)
-        emb = self.dropout(emb)
-        out = self.regressor(emb, **kwargs)
-        # for key, hid in hidden_states.items():
-        #     hidden_states[key] = self.flatten(self.pooling(hid))
-        # hidden_states = torch.cat([emb for emb in hidden_states.values()],dim=1)
-        # out = self.regressor(hidden_states)
-        return out
-
-    def forward(self, img: torch.Tensor, depth_img: torch.Tensor, **kwargs):
-        masks, _, rgb_features = self.openseed_seg.get_mask(img)
-        depth_img = depth_img.expand(-1, 3, -1, -1)
-        for key, feat in rgb_features.items():
-            mask = f.adaptive_avg_pool2d(
-                masks, (feat.shape[-2], feat.shape[-1])
-            ).unsqueeze(1)
-            mask = torch.where(mask.bool(), mask, self.mask_weight)
-            rgb_features[key] = feat * mask
-        _, _, depth_features = self.openseed_seg.get_mask(depth_img)
-        for key, feat in depth_features.items():
-            mask = f.adaptive_avg_pool2d(
-                masks, (feat.shape[-2], feat.shape[-1])
-            ).unsqueeze(1)
-            mask = torch.where(mask.bool(), mask, self.mask_weight)
-            depth_features[key] = feat * mask
-        out = self.forward_features(rgb_features, depth_features, **kwargs)
-        return out
-
-
 class FPNSwinBase(BaseModel):
+    """
+    Base model for our implementation.
+
+    Args:
+        hidden_dim (int): hidden dimension for FPN, attention, etc.
+        pretrained_model (str): pretrained model name (default = microsoft/swin-tiny-patch4-window7-224)
+        regressor (BaseRegressor): nutrient regressor (default = Regressor(2048, 2048))
+        resolution_level (int): resolution level to interpolate after FPN (default=2)
+        mask_weight (float): mask_ratio [0,1] (default=0.5)
+        dropout_rate (float): drop-out rate [0,1] (default=0.1)
+        pos_emb (bool): whether to perform positional embedding (default=False)
+        fpn_after_mask (bool): whether to apply food region mask on the embeddings after or before FPN (default=True)
+        device (torch.device): device (default=cuda)
+    """
     def __init__(
         self,
         hidden_dim: int,
@@ -483,6 +565,12 @@ class FPNSwinBase(BaseModel):
         self.add_pos_emb = AddPosEmb3D()
 
     def init_backbone(self, pretrained_model) -> None:
+        """
+        Init model backbone
+
+        Args:
+            pretrained_model (str): pretrained model name
+        """
         self.rgb_backbone = SwinModel.from_pretrained(pretrained_model)
         self.depth_backbone = SwinModel.from_pretrained(pretrained_model)
         if pretrained_model != "microsoft/swin-tiny-patch4-window7-224":
@@ -496,6 +584,16 @@ class FPNSwinBase(BaseModel):
     def feature_extract(
         self, rgb_img: torch.Tensor, depth_img: torch.Tensor
     ) -> tuple[tuple[torch.FloatTensor], tuple[torch.FloatTensor]]:
+        """
+        Extract feature from model backbone
+
+        Args:
+            rgb_img (torch.Tensor): rgb image tensor [B x C x H x W]
+            depth_img (torch.Tensor): depth image tensor [B x 1 x H x W]
+        Return:
+            rgb_features_hid, depth_features_hid (tuple[tuple[torch.FloatTensor], tuple[torch.FloatTensor]]):
+            Each features_hid is a tuple of hidden embeddings from all layers of the backbone model. [B x C' x H' x W']
+        """
         depth_img = depth_img.expand(-1, 3, -1, -1)
         assert isinstance(self.rgb_backbone, SwinModel)
         assert isinstance(self.depth_backbone, SwinModel)
@@ -503,10 +601,6 @@ class FPNSwinBase(BaseModel):
             rgb_inputs = rgb_img
             depth_inputs = depth_img
         else:
-            # rgb_inputs = self.rgb_feature_extractor(images=rgb_img, return_tensors="pt")
-            # depth_inputs = self.depth_feature_extractor(
-            #     images=depth_img, return_tensors="pt"
-            # )
             rgb_inputs = TF.center_crop(rgb_img, [384, 384])
             depth_inputs = TF.center_crop(depth_img, [384, 384])
 
@@ -523,6 +617,14 @@ class FPNSwinBase(BaseModel):
         return rgb_features_hid, d_features_hid
 
     def attn(self, hidden_states: torch.Tensor) -> torch.Tensor:
+        """
+        Perform self-attention or Trasnformer decoder
+
+        Args:
+            hidden_states (torch.Tensor): input embeddings [B x C x H x W]
+        Return:
+            torch.Tensor: output embeddings [B x C x H x W]
+        """
         n, b, c, h, w = hidden_states.shape
         hidden_states_ = hidden_states.mean(0)
         hidden_states_ = rearrange(hidden_states_, "b c h w -> b (h w) c")
@@ -539,10 +641,25 @@ class FPNSwinBase(BaseModel):
         skip_attn: bool = False,
         **kwargs,
     ):
+        """
+        Our baseline implementation
+
+        Args:
+            rgb_img (torch.Tensor): rgb image tensor [B x C x H x W]
+            depth_img (torch.Tensor): depth image tensor [B x 1 x H x W]
+            mask (torch.Tensor): food region mask tensor [B x (M) x H x W]
+            skip_attn (bool): whether to skip attetion mechanism (default=False)
+        Return:
+            dict[str, torch.Tensor]: output nutritional values (cal, mass, fat, carb, protein)
+        """
         B, _, H, W = rgb_img.shape
+
+        # extract feature from backbone
         rgb_features_hid, d_features_hid = self.feature_extract(rgb_img, depth_img)
         rgb_features_dict = {str(i): hid for i, hid in enumerate(rgb_features_hid[:-1])}
         d_features_dict = {str(i): hid for i, hid in enumerate(d_features_hid[:-1])}
+
+        # compute FPN and apply food region mask
         if self.fpn_after_mask:
             rgb_features_dict = self.mask_fn(rgb_features_dict, mask)
             d_features_dict = self.mask_fn(d_features_dict, mask)
@@ -555,12 +672,16 @@ class FPNSwinBase(BaseModel):
             d_hidden_states = self.mask_fn(d_features_dict, mask)
         hidden_states = self.resize_fn(rgb_hidden_states, d_hidden_states)
 
+        # postional embedding
         if self.pos_emb:
-            # 3dposition embedding
             hidden_states = self.add_pos_emb(hidden_states)
+
+        # self-attention or Transformer decoder
         if not skip_attn:
             hidden_states = self.attn(hidden_states)
         hidden_states = rearrange(hidden_states, "n b c h w -> b (n c) h w")
+
+        # Regression
         emb = self.pooling.forward(hidden_states)
         emb = self.flatten.forward(emb)
         emb = self.dropout.forward(emb)
@@ -569,6 +690,20 @@ class FPNSwinBase(BaseModel):
 
 
 class FPNSwin(FPNSwinBase):
+    """
+    Baseline model for our implementation.
+
+    Args:
+        hidden_dim (int): hidden dimension for FPN, attention, etc.
+        pretrained_model (str): pretrained model name (default = microsoft/swin-tiny-patch4-window7-224)
+        regressor (BaseRegressor): nutrient regressor (default = Regressor(2048, 2048))
+        resolution_level (int): resolution level to interpolate after FPN (default=2)
+        mask_weight (float): mask_ratio [0,1] (default=0.8)
+        dropout_rate (float): drop-out rate [0,1] (default=0.1)
+        pos_emb (bool): whether to perform positional embedding (default=False)
+        fpn_after_mask (bool): whether to apply food region mask on the embeddings after or before FPN (default=True)
+        device (torch.device): device (default=cuda)
+    """
     def __init__(
         self,
         hidden_dim: int,
@@ -595,6 +730,23 @@ class FPNSwin(FPNSwinBase):
 
 
 class FPNCrossSwin(FPNSwinBase):
+    """
+    Our model with cross-attention decoder without class token.
+
+    Args:
+        hidden_dim (int): hidden dimension for FPN, attention, etc.
+        num_layers (int): number of transformer blocks
+        num_heads (int): numer of heads for multihead attention
+        mlp_ratio (float): ratio of mlp hidden dimension to model dimension
+        pretrained_model (str): pretrained model name (default = microsoft/swin-tiny-patch4-window7-224)
+        regressor (BaseRegressor): nutrient regressor (default = Regressor(3072, 3072))
+        resolution_level (int): resolution level to interpolate after FPN (default=2)
+        mask_weight (float): mask_ratio [0,1] (default=0.8)
+        dropout_rate (float): drop-out rate [0,1] (default=0.1)
+        pos_emb (bool): whether to perform positional embedding (default=True)
+        fpn_after_mask (bool): whether to apply food region mask on the embeddings after or before FPN (default=True)
+        device (torch.device): device (default=cuda)
+    """
     def __init__(
         self,
         hidden_dim: int,
@@ -626,6 +778,14 @@ class FPNCrossSwin(FPNSwinBase):
         )
 
     def attn(self, hidden_states: torch.Tensor) -> torch.Tensor:
+        """
+        Compute using cross-attention transformer decoder
+
+        Args:
+            hidden_states (torch.Tensor): input embeddings [N x B x C x H x W]
+        Return:
+            torch.Tensor: output embeddings [N x B x C x H x W]
+        """
         n, b, c, h, w = hidden_states.shape
         hidden_states = rearrange(hidden_states, " n b c h w -> b n (h w) c")
         hidden_states = self.decoder(hidden_states)
@@ -634,6 +794,23 @@ class FPNCrossSwin(FPNSwinBase):
 
 
 class FPNCrossSwinCLS(FPNSwinBase):
+    """
+    Our model with cross-attention decoder with class token.
+
+    Args:
+        hidden_dim (int): hidden dimension for FPN, attention, etc.
+        num_layers (int): number of transformer blocks
+        num_heads (int): numer of heads for multihead attention
+        mlp_ratio (float): ratio of mlp hidden dimension to model dimension
+        pretrained_model (str): pretrained model name (default = microsoft/swin-tiny-patch4-window7-224)
+        regressor (BaseRegressor): nutrient regressor (default = Regressor(3072, 3072))
+        resolution_level (int): resolution level to interpolate after FPN (default=2)
+        mask_weight (float): mask_ratio [0,1] (default=0.8)
+        dropout_rate (float): drop-out rate [0,1] (default=0.1)
+        pos_emb (bool): whether to perform positional embedding (default=True)
+        fpn_after_mask (bool): whether to apply food region mask on the embeddings after or before FPN (default=True)
+        device (torch.device): device (default=cuda)
+    """
     def __init__(
         self,
         hidden_dim: int,
@@ -667,6 +844,14 @@ class FPNCrossSwinCLS(FPNSwinBase):
         nn.init.trunc_normal_(self.cls_token, std=0.02)
 
     def attn(self, hidden_states: torch.Tensor) -> torch.Tensor:
+        """
+        Compute using cross-attention transformer decoder
+
+        Args:
+            hidden_states (torch.Tensor): input embeddings [N x B x C x H x W]
+        Return:
+            torch.Tensor: output embeddings [N x B x C x H x W]
+        """
         n, b, c, h, w = hidden_states.shape
         hidden_states = rearrange(hidden_states, " n b c h w -> b n (h w) c")
         cls_tokens = self.cls_token.repeat(b, n, 1, 1)
@@ -678,6 +863,24 @@ class FPNCrossSwinCLS(FPNSwinBase):
 
 
 class FPNCrossSwinMultiMask(FPNSwinBase):
+    """
+    Our model with cross-attention decoder and multi-masks. Multiple masks are apply by concatenating with hidden embeddings
+
+    Args:
+        hidden_dim (int): hidden dimension for FPN, attention, etc.
+        mask_dim (int): number of masks. For an easier implementation, mask_dim should be a multiple of 6
+        num_layers (int): number of transformer blocks
+        num_heads (int): numer of heads for multihead attention
+        mlp_ratio (float): ratio of mlp hidden dimension to model dimension
+        pretrained_model (str): pretrained model name (default = microsoft/swin-tiny-patch4-window7-224)
+        regressor (BaseRegressor): nutrient regressor (default = Regressor(3120, 3120))
+        resolution_level (int): resolution level to interpolate after FPN (default=2)
+        mask_weight (float): mask_ratio [0,1] (default=0.8)
+        dropout_rate (float): drop-out rate [0,1] (default=0.1)
+        pos_emb (bool): whether to perform positional embedding (default=True)
+        fpn_after_mask (bool): whether to apply food region mask on the embeddings after or before FPN (default=False)
+        device (torch.device): device (default=cuda)
+    """
     def __init__(
         self,
         hidden_dim: int,
@@ -712,6 +915,14 @@ class FPNCrossSwinMultiMask(FPNSwinBase):
         self.mask_fn = AppendMask(mask_weight, mask_dim)
 
     def attn(self, hidden_states: torch.Tensor) -> torch.Tensor:
+        """
+        Compute using cross-attention transformer decoder
+
+        Args:
+            hidden_states (torch.Tensor): input embeddings [N x B x C x H x W]
+        Return:
+            torch.Tensor: output embeddings [N x B x C x H x W]
+        """
         n, b, c, h, w = hidden_states.shape
         hidden_states = rearrange(hidden_states, " n b c h w -> b n (h w) c")
         hidden_states = self.decoder(hidden_states)
@@ -720,6 +931,24 @@ class FPNCrossSwinMultiMask(FPNSwinBase):
 
 
 class FPNNoCrossSwinMultiMask(FPNSwinBase):
+    """
+    Our model with simple attention decoder and multi-masks. Multiple masks are apply by concatenating with hidden embeddings
+
+    Args:
+        hidden_dim (int): hidden dimension for FPN, attention, etc.
+        mask_dim (int): number of masks. For an easier implementation, mask_dim should be a multiple of 6
+        num_layers (int): number of transformer blocks
+        num_heads (int): numer of heads for multihead attention
+        mlp_ratio (float): ratio of mlp hidden dimension to model dimension
+        pretrained_model (str): pretrained model name (default = microsoft/swin-tiny-patch4-window7-224)
+        regressor (BaseRegressor): nutrient regressor (default = Regressor(3120, 3120))
+        resolution_level (int): resolution level to interpolate after FPN (default=2)
+        mask_weight (float): mask_ratio [0,1] (default=0.8)
+        dropout_rate (float): drop-out rate [0,1] (default=0.1)
+        pos_emb (bool): whether to perform positional embedding (default=True)
+        fpn_after_mask (bool): whether to apply food region mask on the embeddings after or before FPN (default=False)
+        device (torch.device): device (default=cuda)
+    """
     def __init__(
         self,
         hidden_dim: int,
@@ -754,6 +983,14 @@ class FPNNoCrossSwinMultiMask(FPNSwinBase):
         self.mask_fn = AppendMask(mask_weight, mask_dim)
 
     def attn(self, hidden_states: torch.Tensor) -> torch.Tensor:
+        """
+        Compute using simple self-attention transformer decoder
+
+        Args:
+            hidden_states (torch.Tensor): input embeddings [N x B x C x H x W]
+        Return:
+            torch.Tensor: output embeddings [N x B x C x H x W]
+        """
         n, b, c, h, w = hidden_states.shape
         hidden_states = rearrange(hidden_states, " n b c h w -> b (n h w) c")
         hidden_states = self.decoder(hidden_states)
@@ -762,6 +999,23 @@ class FPNNoCrossSwinMultiMask(FPNSwinBase):
 
 
 class FPNNoCrossSwinSingleMask(FPNSwinBase):
+    """
+    Our model with simple attention decoder and single mask.
+
+    Args:
+        hidden_dim (int): hidden dimension for FPN, attention, etc.
+        num_layers (int): number of transformer blocks
+        num_heads (int): numer of heads for multihead attention
+        mlp_ratio (float): ratio of mlp hidden dimension to model dimension
+        pretrained_model (str): pretrained model name (default = microsoft/swin-tiny-patch4-window7-224)
+        regressor (BaseRegressor): nutrient regressor (default = Regressor(3072, 3072))
+        resolution_level (int): resolution level to interpolate after FPN (default=2)
+        mask_weight (float): mask_ratio [0,1] (default=0.8)
+        dropout_rate (float): drop-out rate [0,1] (default=0.1)
+        pos_emb (bool): whether to perform positional embedding (default=True)
+        fpn_after_mask (bool): whether to apply food region mask on the embeddings after or before FPN (default=False)
+        device (torch.device): device (default=cuda)
+    """
     def __init__(
         self,
         hidden_dim: int,
@@ -793,6 +1047,14 @@ class FPNNoCrossSwinSingleMask(FPNSwinBase):
         )
 
     def attn(self, hidden_states: torch.Tensor) -> torch.Tensor:
+        """
+        Compute using simple self-attention transformer decoder
+
+        Args:
+            hidden_states (torch.Tensor): input embeddings [N x B x C x H x W]
+        Return:
+            torch.Tensor: output embeddings [N x B x C x H x W]
+        """
         n, b, c, h, w = hidden_states.shape
         hidden_states = rearrange(hidden_states, " n b c h w -> b (n h w) c")
         hidden_states = self.decoder(hidden_states)
@@ -801,6 +1063,24 @@ class FPNNoCrossSwinSingleMask(FPNSwinBase):
 
 
 class FPNTripleCrossSwin(FPNSwinBase):
+    """
+    Our model with triple-cross-attention decoder.
+
+    Args:
+        hidden_dim (int): hidden dimension for FPN, attention, etc.
+        mask_dim (int): number of masks.
+        num_layers (int): number of transformer blocks
+        num_heads (int): numer of heads for multihead attention
+        mlp_ratio (float): ratio of mlp hidden dimension to model dimension
+        pretrained_model (str): pretrained model name (default = microsoft/swin-tiny-patch4-window7-224)
+        regressor (BaseRegressor): nutrient regressor (default = Regressor(3072, 3072))
+        resolution_level (int): resolution level to interpolate after FPN (default=2)
+        mask_weight (float): mask_ratio [0,1] (default=0.8)
+        dropout_rate (float): drop-out rate [0,1] (default=0.1)
+        pos_emb (bool): whether to perform positional embedding (default=True)
+        fpn_after_mask (bool): whether to apply food region mask on the embeddings after or before FPN (default=False)
+        device (torch.device): device (default=cuda)
+    """
     def __init__(
         self,
         hidden_dim: int,
@@ -836,124 +1116,20 @@ class FPNTripleCrossSwin(FPNSwinBase):
         self.add_pos_emb = AddPosEmb4D()
 
     def attn(self, hidden_states: torch.Tensor) -> torch.Tensor:
+        """
+        Compute using triple-cross-attention transformer decoder
+
+        Args:
+            hidden_states (torch.Tensor): input embeddings [N x B x M x C x H x W]
+        Return:
+            torch.Tensor: output embeddings [N x B x M x C x H x W]
+        """
         n, b, m, c, h, w = hidden_states.shape
         hidden_states = rearrange(hidden_states, " n b m c h w -> b n m (h w) c")
         hidden_states = self.decoder(hidden_states)
         hidden_states = rearrange(hidden_states, "b n m (h w) c -> n b m c h w", h=h)
         hidden_states = hidden_states.mean(2)
         return hidden_states
-
-
-class FPNCrossSwinCLS2Branch(FPNSwinBase):
-    def __init__(
-        self,
-        hidden_dim: int,
-        num_layers: int,
-        num_heads: int,
-        mlp_ratio: float,
-        pretrained_model: str = "microsoft/swin-tiny-patch4-window7-224",
-        regressor: BaseRegressor = Regressor(3072, 3072),
-        mass_regressor: BaseRegressor = Regressor(3072, 3072),
-        resolution_level: int = 2,
-        mask_weight: float = 0.8,
-        dropout_rate: float = 0.1,
-        pos_emb: bool = True,
-        fpn_after_mask: bool = True,
-        device="cuda",
-    ) -> None:
-        super().__init__(
-            hidden_dim,
-            pretrained_model,
-            regressor,
-            resolution_level,
-            mask_weight,
-            dropout_rate,
-            pos_emb,
-            fpn_after_mask,
-            device,
-        )
-        self.mass_decoder = CrossAttentionDecoder(
-            hidden_dim, num_layers, num_heads, mlp_ratio, dropout_rate
-        )
-        self.nutrient_decoder = CrossAttentionDecoder(
-            hidden_dim, num_layers, num_heads, mlp_ratio, dropout_rate
-        )
-        self.mass_regressor = mass_regressor
-        self.cls_token = nn.Parameter(torch.zeros(hidden_dim))
-        nn.init.trunc_normal_(self.cls_token, std=0.02)
-
-    def attn(
-        self, masked_hidden_states: torch.Tensor, unmasked_hidden_states: torch.Tensor
-    ) -> tuple[torch.Tensor, torch.Tensor]:
-        n, b, c, h, w = masked_hidden_states.shape
-        cls_tokens = self.cls_token.repeat(b, n, 1, 1)
-        masked_hidden_states = rearrange(
-            masked_hidden_states, " n b c h w -> b n (h w) c"
-        )
-        masked_hidden_states = torch.cat([cls_tokens, masked_hidden_states], dim=2)
-        unmasked_hidden_states = rearrange(
-            unmasked_hidden_states, " n b c h w -> b n (h w) c"
-        )
-        unmasked_hidden_states = torch.cat([cls_tokens, unmasked_hidden_states], dim=2)
-        mass_hidden_states = self.mass_decoder(unmasked_hidden_states)
-        mass_hidden_states = mass_hidden_states[:, :, 1:]
-        mass_hidden_states = rearrange(
-            mass_hidden_states, "b n (h w) c -> n b c h w", h=h
-        )
-        nutrient_hidden_states = self.nutrient_decoder(masked_hidden_states)
-        nutrient_hidden_states = nutrient_hidden_states[:, :, 1:]
-        nutrient_hidden_states = rearrange(
-            nutrient_hidden_states, "b n (h w) c -> n b c h w", h=h
-        )
-        return mass_hidden_states, nutrient_hidden_states
-
-    def forward(
-        self,
-        rgb_img: torch.Tensor,
-        depth_img: torch.Tensor,
-        mask: torch.Tensor,
-        **kwargs,
-    ):
-        B, _, H, W = rgb_img.shape
-        rgb_features_hid, d_features_hid = self.feature_extract(rgb_img, depth_img)
-        rgb_features_dict = {str(i): hid for i, hid in enumerate(rgb_features_hid[:-1])}
-        d_features_dict = {str(i): hid for i, hid in enumerate(d_features_hid[:-1])}
-        rgb_features_dict = self.rgb_fpn.forward(rgb_features_dict)  # type: ignore
-        d_features_dict = self.depth_fpn.forward(d_features_dict)  # type: ignore
-        masked_rgb_hidden_states = self.mask_fn(rgb_features_dict, mask)
-        masked_d_hidden_states = self.mask_fn(d_features_dict, mask)
-        masked_hidden_states = self.resize_fn(
-            masked_rgb_hidden_states, masked_d_hidden_states
-        )
-        unmasked_hidden_states = self.resize_fn(rgb_features_dict, d_features_dict)
-
-        if self.pos_emb:
-            # 3dposition embedding
-            masked_hidden_states = self.add_pos_emb(masked_hidden_states)
-            unmasked_hidden_states = self.add_pos_emb(unmasked_hidden_states)
-        mass_hidden_states, nutrient_hidden_states = self.attn(
-            masked_hidden_states, unmasked_hidden_states
-        )
-        mass_hidden_states = rearrange(mass_hidden_states, "n b c h w -> b (n c) h w")
-        nutrient_hidden_states = rearrange(
-            nutrient_hidden_states, "n b c h w -> b (n c) h w"
-        )
-        hidden_states = mass_hidden_states + nutrient_hidden_states
-        emb = self.pooling.forward(hidden_states)
-        emb = self.flatten.forward(emb)
-        emb = self.dropout.forward(emb)
-        out = self.regressor(emb, **kwargs)
-        return out
-        # emb_mass = self.pooling.forward(mass_hidden_states)
-        # emb_mass = self.flatten.forward(emb_mass)
-        # emb_mass = self.dropout.forward(emb_mass)
-        # out_mass = self.mass_regressor(emb_mass, **kwargs)
-        # emb_nutrient = self.pooling.forward(nutrient_hidden_states)
-        # emb_nutrient = self.flatten.forward(emb_nutrient)
-        # emb_nutrient = self.dropout.forward(emb_nutrient)
-        # out_nutrient = self.regressor(emb_nutrient, **kwargs)
-        # out_nutrient["mass"] = out_mass["mass"]
-        # return out_nutrient
 
 
 def get_model(config: CN, device: torch.device) -> BaseModel:
@@ -966,25 +1142,25 @@ def get_model(config: CN, device: torch.device) -> BaseModel:
             model = SimpleInceptionV2(
                 4096,
                 pretrained_model,
-                regressor=Regressor(6144, 4096, dropout_rate=dropout_rate),
+                regressor=Regressor(6144, 4096),
             )
         elif mod == "resnet50":
             model = FPN(
                 512,
                 pretrained_model,
-                regressor=Regressor(2048, 2048, dropout_rate=dropout_rate),
+                regressor=Regressor(2048, 2048),
             )
         elif mod == "resnet101":
             model = FPN(
                 512,
                 pretrained_model,
-                regressor=Regressor(2048, 2048, dropout_rate=dropout_rate),
+                regressor=Regressor(2048, 2048),
             )
         elif mod == "swin":
             model = FPNSwin(
                 512,
                 pretrained_model,
-                regressor=Regressor(2048, 2048, dropout_rate=dropout_rate),
+                regressor=Regressor(2048, 2048),
                 mask_weight=config.MODEL.MASK_WEIGHT,
                 dropout_rate=dropout_rate,
             )
@@ -1007,18 +1183,6 @@ def get_model(config: CN, device: torch.device) -> BaseModel:
                 config.MODEL.DECODER.MLP_RATIO,
                 pretrained_model,
                 regressor=Regressor(3072, 3072),
-                mask_weight=config.MODEL.MASK_WEIGHT,
-                dropout_rate=dropout_rate,
-            )
-        elif mod == "cross-swin-cls-branch":
-            model = FPNCrossSwinCLS2Branch(
-                768,
-                config.MODEL.DECODER.NUM_LAYERS,
-                config.MODEL.DECODER.NUM_HEADS,
-                config.MODEL.DECODER.MLP_RATIO,
-                pretrained_model,
-                regressor=Regressor(3072, 3072),
-                mass_regressor=Regressor(3072, 3072),
                 mask_weight=config.MODEL.MASK_WEIGHT,
                 dropout_rate=dropout_rate,
             )
@@ -1071,12 +1235,6 @@ def get_model(config: CN, device: torch.device) -> BaseModel:
                 mask_weight=config.MODEL.MASK_WEIGHT,
                 dropout_rate=dropout_rate,
             )
-        elif mod == "openseed":
-            model = FPNOpenSeeD(
-                512,
-                regressor=Regressor(2048, 2048, dropout_rate=dropout_rate),
-                mask_weight=config.MODEL.MASK_WEIGHT,
-            )
         else:
             raise ValueError(f"Unkown model and loss: {mod} and {loss}")
     elif loss == "multi_ingrs":
@@ -1111,18 +1269,6 @@ def get_model(config: CN, device: torch.device) -> BaseModel:
                 config.MODEL.DECODER.MLP_RATIO,
                 pretrained_model,
                 regressor=RegressorIngrs(3072, 3072),
-                mask_weight=config.MODEL.MASK_WEIGHT,
-                dropout_rate=dropout_rate,
-            )
-        elif mod == "cross-swin-cls-branch":
-            model = FPNCrossSwinCLS2Branch(
-                768,
-                config.MODEL.DECODER.NUM_LAYERS,
-                config.MODEL.DECODER.NUM_HEADS,
-                config.MODEL.DECODER.MLP_RATIO,
-                pretrained_model,
-                regressor=Regressor(3072, 3072),
-                mass_regressor=Regressor(3072, 3072),
                 mask_weight=config.MODEL.MASK_WEIGHT,
                 dropout_rate=dropout_rate,
             )

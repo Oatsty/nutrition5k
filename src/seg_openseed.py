@@ -13,6 +13,12 @@ from OpenSeeD.utils.distributed import init_distributed
 
 
 class OpenSeeDSeg:
+    """
+    OpenSeeD Segmentation Module.
+
+    Args:
+        device (torch.device): device
+    """
     def __init__(self, device) -> None:
         super(OpenSeeDSeg, self).__init__()
         conf_files = ["OpenSeeD/configs/openseed/openseed_swint_lang.yaml"]
@@ -45,6 +51,14 @@ class OpenSeeDSeg:
         self.model.model.sem_seg_head.num_classes = len(thing_classes)  # type: ignore
 
     def seg(self, image: torch.Tensor):
+        """
+        food region instance segmentation
+
+        Args:
+            image (torch.Tensor): food image or image batch
+        Return:
+            outputs: output mask with scores and additional info
+        """
         with torch.no_grad():
             height = image.shape[-2]
             width = image.shape[-1]
@@ -55,6 +69,14 @@ class OpenSeeDSeg:
         return outputs
 
     def get_mask(self, img: torch.Tensor, all_mask: bool = False, top: int = 20):
+        """
+        get mask for food region segmentation
+
+        Args:
+            img (torch.Tensor): food image or image batch
+            all_mask (bool): whether to get multiple masks or not (default = False)
+            top(int): number of masks to be saved if all_mask = True (default = 20)
+        """
         outputs = self.seg(img)
         features = outputs["backbone_features"]
         mask_batch = []

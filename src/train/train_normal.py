@@ -16,6 +16,14 @@ logger = logging.getLogger()
 
 
 class NormalTrainer(BaseTrainer):
+    """
+    Normal Trainer. Train without food region mask information.
+    Using cosine learning rate scheduler with Adam optimizer.
+    Default loss is L1 loss.
+
+    Args:
+        config (CN): config
+    """
     def init_train(self, config: CN, model: BaseModel) -> None:
         scheduler_warmup = config.TRAIN.SCHEDULER_WARMUP
         self.optimizer = optim.Adam(
